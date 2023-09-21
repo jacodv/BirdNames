@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "BirdNames.Tool": {
+      "commandName": "Project",
+      "commandLineArgs": "process-xml -s \"C:\\Backup\\Adobe\\BirdNameList\\master_ioc-names_xml.xml\""
+    }
+  }
+}

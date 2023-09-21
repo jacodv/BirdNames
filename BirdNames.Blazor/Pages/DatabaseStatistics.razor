@@ -1,0 +1,46 @@
+﻿@page "/stats"
+@using BirdNames.Core.Interfaces
+
+@inject IDatabaseStatisticsService DbStatisticsService
+
+<PageTitle>Database Statistics</PageTitle>
+
+<h1>Loaded data counters</h1>
+
+<p>The count of each collection in the database</p>
+
+@if (_counters == null)
+{
+  <p><em>Loading...</em></p>
+}
+else
+{
+  <table class="table">
+    <thead>
+    <tr>
+      <th>Collection Name</th>
+      <th>Count</th>
+    </tr>
+    </thead>
+    <tbody>
+      @foreach (var colName in _counters.Keys.OrderBy(o=>o))
+    {
+      <tr>
+        <td>@colName</td>
+          <td>@_counters[colName]</td>
+      </tr>
+    }
+    </tbody>
+  </table>
+}
+
+
+@code{
+  private Dictionary<string, int>? _counters = null;
+
+  protected override async Task OnInitializedAsync()
+  {
+    await Task.CompletedTask;
+    _counters = await DbStatisticsService.GetCollectionCountersAsync();
+  }
+}

@@ -1,0 +1,363 @@
+﻿@page "/download"
+@using BirdNames.Core.Helpers
+@using BirdNames.Core.Interfaces
+@using BirdNames.Core.Enums
+@using BirdNames.Core.Models
+@using BirdNames.Dal.Interfaces
+@using SharpCompress.Archives.Zip
+@using SharpCompress.Common
+@using SharpCompress.Writers
+
+@inject IRepository<EBirdMajorRegion> MajorRegionRepository;
+@inject IRepository<EBirdCountry> CountryRepository;
+@inject IRepository<EBirdSubRegion1> Subregion1Repository;
+@inject IEBirdService EBirdService;
+@inject IJSRuntime JSRuntime;
+
+<PageTitle>Download Keyword List</PageTitle>
+
+<h3>Configure Keyword List</h3>
+<hr/>
+<div class="row">
+  <div class="col-md-6">
+    <RadzenLabel Text="Download File:" Component="fileNameTextBox" Style="margin-right: 8px; vertical-align: middle;font-style: italic; font-weight:bold" />
+    <RadzenTextBox Name="fileNameTextBox" Value=@_downloadFileName
+                   Disabled="true" Style="width: 70%"></RadzenTextBox>
+  </div>
+  <div class="col-md-6">
+    <RadzenCheckBox Name="zipCheckBox" @bind-Value=@_zip></RadzenCheckBox>
+    <RadzenLabel Text="Download as zip file" Component="zipCheckBox" Style="margin-left: 8px; vertical-align: middle;font-style: italic; font-weight:bold" />
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-6">
+    <RadzenLabel Text="Choose the depth" Component="depthCheckList" Style="margin-right: 8px; vertical-align: middle;font-style: italic; font-weight:bold" />
+    <RadzenCheckBoxList Name="depthCheckList"
+                        Data="@_depthItems"
+                        Value=@_selectedDepth
+                        Change=@_deptChanged
+                        TValue="int"
+                        TextProperty="Value"
+                        ValueProperty="Key" AllowSelectAll="true" SelectAllText="Select All" />
+  </div>
+  <div class="col-md-6">
+    <RadzenLabel Text="Choose the synonyms" Component="synonymsCheckList" Style="margin-right: 8px; vertical-align: middle;font-style: italic; font-weight:bold" />
+    <RadzenCheckBoxList id="synonymsCheckList"
+                        Data="@_synonymItems"
+                        Value=@_selectedSynonyms
+                        Change=@_synonymChanged
+                        TValue="int"
+                        TextProperty="Value"
+                        ValueProperty="Key" AllowSelectAll="true" SelectAllText="Select All" />
+
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-12">
+    <RadzenLabel Text="Choose the Region Type" Component="regionTypeOptions" Style="margin-right: 8px; vertical-align: middle;font-style: italic; font-weight:bold" />
+    <RadzenRadioButtonList id="regionTypeOptions"
+                           TValue="int"
+                           Value=@_selectedRegionType
+                           Change="@_selectedRegionTypeChanged">
+      <Items>
+        <RadzenRadioButtonListItem Value="0" Text="Major Region" />
+        <RadzenRadioButtonListItem Value="1" Text="Country" />
+        <RadzenRadioButtonListItem Value="2" Text="Sub-national" />
+      </Items>
+    </RadzenRadioButtonList>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-4">
+    <RadzenAutoComplete id="regionAutoCompleted"
+    @ref="_autoCompleteElement"
+    @bind-SearchText=@_filterText
+                        FilterDelay="500"
+                        TextProperty="Name"
+                        Data=@_autoCompleteSource
+                        Value=@_selectedItemName
+                        Change=@_regionChanged
+                        LoadData=@_loadFilterData
+                        Style="width: 100%" />
+  </div>
+  <div class="col-md-4">
+    <div style="color:blue">@_regionChildren [@_actionsText]</div>
+    <div></div>
+    <div style="color:red">@_error</div>
+  </div>
+  <div class="col-md-4">
+    <RadzenButton Text="Preview" Click=@_preview Disabled="@_previewDisabled"></RadzenButton>
+    <RadzenButton Text="Download" Click=@_download Disabled="@_downloadDisabled"></RadzenButton>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-12">
+    <hr />
+    <RadzenLabel Text="Preview" Style="margin-right: 8px; vertical-align: middle;font-style: italic; font-weight:bold" />
+    <hr />
+    <pre id="preview">@_previewText</pre>
+  </div>
+</div>
+
+@* ReSharper disable ConvertToConstant.Local *@
+@* ReSharper disable FieldCanBeMadeReadOnly.Local *@
+@code {
+  RadzenAutoComplete? _autoCompleteElement;
+  IEnumerable<int>? _selectedDepth;
+  IEnumerable<KeyValuePair<int, string>>? _depthItems;
+
+  IEnumerable<int>? _selectedSynonyms;
+  IEnumerable<KeyValuePair<int, string>>? _synonymItems;
+
+  string _downloadFileName = $"BirdNamesKeywords{DateTime.Now:yyy-MM-dd}.txt";
+  bool _zip = true;
+
+  bool _previewDisabled = true;
+  bool _downloadDisabled = true;
+  int _selectedRegionType = 0;
+  string _selectedOptionText = "Major Regions";
+  string _previewText = "";
+  string _actionsText = "";
+  string? _filterText = null;
+  string _regionChildren = "";
+  int? _selectDepthValue = null;
+  int? _selectSynonymsValue = null;
+  CodeAndNameBase? _selectedRegionItem;
+  KeywordListCriteria? _keywordListCriteria;
+  MemoryStream? _keyWordFileContent;
+  string? _error = null;
+
+  IEnumerable<CodeAndNameBase>? _autoCompleteSource;
+  string? _selectedItemName;
+
+  #region Overrides of ComponentBase
+
+  protected override async Task OnInitializedAsync()
+  {
+    await base.OnInitializedAsync();
+
+    _depthItems = EnumHelper.GetOrderedEnumValues<KeywordDepth>().ToList();
+    _selectedDepth = _depthItems.Select(x => x.Key).ToArray();
+
+    _synonymItems = EnumHelper.GetOrderedEnumValues<HeaderSynonym>().ToList();
+    _selectedSynonyms = _synonymItems.Select(x => x.Key).ToArray();
+
+    await _selectedRegionTypeChanged(0);
+    await _loadFilterData(new LoadDataArgs() { Filter = null });
+  }
+  protected override async Task OnAfterRenderAsync(bool firstRender)
+  {
+    if (firstRender)
+    {
+      if (_autoCompleteElement != null)
+        await _autoCompleteElement.Element.FocusAsync();
+    }
+  }
+
+  #endregion
+
+  #region Private
+  private Task _loadFilterData(LoadDataArgs args)
+  {
+    _autoCompleteSource = _selectedRegionType switch
+    {
+      0 => _getAutoCompleteSource<EBirdMajorRegion>(MajorRegionRepository, args.Filter),
+      1 => _getAutoCompleteSource<EBirdCountry>(CountryRepository, args.Filter),
+      2 => _getAutoCompleteSource<EBirdSubRegion1>(Subregion1Repository, args.Filter),
+      _ => _autoCompleteSource
+    };
+
+    _actionsText = $"{DateTime.Now:T} Loaded {_autoCompleteSource?.Count()} {_selectedOptionText} ({_selectedRegionType})";
+
+    return Task.CompletedTask;
+  }
+  private IEnumerable<T> _getAutoCompleteSource<T>(IRepository<T> repository, string? filter) where T : CodeAndNameBase
+  {
+    if (filter == null)
+      return repository
+        .AsQueryable()
+        .OrderBy(o => o.Name);
+
+    return repository
+      .AsQueryable()
+      .OrderBy(o => o.Name)
+      .Where(w => w.Name.ToLower().Contains(filter.ToLower()));
+
+    _validate();
+  }
+  private async Task _selectedRegionTypeChanged(int args)
+  {
+    _selectedRegionType = args;
+    switch (_selectedRegionType)
+    {
+      case 0:
+        _selectedOptionText = "Major Regions";
+        break;
+      case 1:
+        _selectedOptionText = "Countries";
+        break;
+      case 2:
+        _selectedOptionText = "Sub-national";
+        break;
+    }
+    _filterText = null;
+    _regionChildren = "";
+    _selectedItemName = null;
+    _previewDisabled = true;
+    _downloadDisabled = true;
+    _autoCompleteSource = null;
+    _previewText = "";
+    _actionsText = "";
+    _selectedRegionItem = null;
+
+    if (_autoCompleteElement != null)
+      await _autoCompleteElement.Element.FocusAsync();
+
+    _validate();
+  }
+  private void _regionChanged(dynamic args)
+  {
+    _selectedItemName = args;
+    _actionsText = "Region changed";
+    _getSelectedRegionItem();
+  }
+  private void _deptChanged(dynamic args)
+  {
+    _selectedDepth = args;
+    _actionsText = "Depth changed";
+    _validate();
+  }
+  private void _synonymChanged(dynamic args)
+  {
+    _selectedSynonyms = args;
+    _actionsText = "Synonyms changed";
+    _validate();
+  }
+  private void _getSelectedRegionItem()
+  {
+    switch (_selectedRegionType)
+    {
+      case 0:
+        _selectedRegionItem = MajorRegionRepository.AsQueryable().FirstOrDefault(f => f.Name == _selectedItemName);
+        if (_selectedRegionItem != null)
+          _regionChildren = string.Join(", ", ((EBirdMajorRegion)_selectedRegionItem).Countries.Take(5));
+        break;
+      case 1:
+        _selectedRegionItem = CountryRepository.AsQueryable().FirstOrDefault(f => f.Name == _selectedItemName);
+        if (_selectedRegionItem != null)
+          _regionChildren = ((EBirdCountry)_selectedRegionItem).Continent;
+        break;
+      case 2:
+        _selectedRegionItem = Subregion1Repository.AsQueryable().FirstOrDefault(f => f.Name == _selectedItemName);
+        if (_selectedRegionItem != null)
+          _regionChildren = ((EBirdSubRegion1)_selectedRegionItem).Country;
+        break;
+      default:
+        _selectedRegionItem = null;
+        break;
+    }
+
+    _validate();
+  }
+  private void _validate()
+  {
+    _previewDisabled = true;
+    _selectDepthValue = _selectedDepth?.Any() == true ?
+      _selectedDepth?.Sum() :
+      null;
+    _selectSynonymsValue = _selectedSynonyms?.Any() == true ?
+      _selectedSynonyms?.Sum() :
+      null;
+
+    if (_selectDepthValue == null || _selectSynonymsValue == null || _selectedRegionItem == null)
+    {
+      _keywordListCriteria = null;
+      return;
+    }
+    var majorRegionCode = _selectedRegionType == 0 ? _selectedRegionItem.Code : string.Empty;
+    _keywordListCriteria = new KeywordListCriteria(majorRegionCode)
+      {
+        Depth = (KeywordDepth)_selectDepthValue,
+        HeaderSynonyms = (HeaderSynonym)_selectSynonymsValue,
+        Country = _selectedRegionType == 1 ? _selectedRegionItem.Code : null,
+        SubRegion1 = _selectedRegionType == 2 ? _selectedRegionItem.Code : null,
+      };
+
+    _previewDisabled = !_keywordListCriteria.IsValid();
+  }
+  private async Task _preview()
+  {
+    try
+    {
+      _validate();
+      if (_previewDisabled)
+        return;
+
+      _downloadDisabled = true;
+      if (_keywordListCriteria == null)
+        return;
+
+      _keyWordFileContent = await EBirdService.DownloadKeywords(_keywordListCriteria);
+      if (_keyWordFileContent == null)
+        return;
+
+      await _getPreviewText();
+      _downloadDisabled = false;
+    }
+    catch (Exception e)
+    {
+      _error = e.ToString();
+    }
+  }
+  private async Task _getPreviewText()
+  {
+    _keyWordFileContent!.Position = 0;
+    using var reader = new StreamReader(_keyWordFileContent!, leaveOpen: true);
+    var buffer = new char[512];
+    await reader.ReadAsync(buffer, 0, buffer.Length);
+    _previewText = new string(buffer);
+    _keyWordFileContent.Position = 0;
+  }
+  private async Task _download()
+  {
+    try
+    {
+      if (_downloadDisabled || _keyWordFileContent == null)
+        return;
+
+      var fileName = _zip ?
+        _downloadFileName.Replace(".txt", ".zip") :
+        _downloadFileName;
+      var fileData = _zip ?
+        _createZip() :
+        _keyWordFileContent.ToArray();
+
+      _keyWordFileContent.Position = 0;
+      await JSRuntime.InvokeAsync<object>(
+        "jsSaveAsFile",
+        fileName,
+        Convert.ToBase64String(fileData));
+    }
+    catch (Exception e)
+    {
+      _error = e.ToString();
+    }
+  }
+
+  private byte[] _createZip()
+  {
+    using var memoryStream = new MemoryStream();
+    using (var archive = ZipArchive.Create())
+    {
+      archive.AddEntry(_downloadFileName, _keyWordFileContent!, _keyWordFileContent!.Length, DateTime.Now);
+      archive.SaveTo(memoryStream, new WriterOptions(CompressionType.Deflate)
+        {
+          LeaveStreamOpen = true
+        });
+    }
+    //reset memoryStream to be usable now
+    memoryStream.Position = 0;
+    return memoryStream.ToArray();
+  }
+  #endregion
+}
