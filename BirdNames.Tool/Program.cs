@@ -5,6 +5,7 @@ using System.Reflection;
 using BirdNames.Core.Enums;
 using BirdNames.Core.Helpers;
 using BirdNames.Core.Models;
+using BirdNames.Core.Settings;
 using BirdNames.Core.StartUp;
 using BirdNames.Core.Xml;
 using BirdNames.Tool.Helpers;
@@ -62,6 +63,10 @@ internal class Program
       .Configure<DatabaseSettings>(settings =>
       {
         Configuration.GetSection(nameof(DatabaseSettings)).Bind(settings);
+      })
+      .Configure<BirdNamesCoreSettings>(settings =>
+      {
+        Configuration.GetSection(nameof(BirdNamesCoreSettings)).Bind(settings);
       })
       .AddOptions();
 

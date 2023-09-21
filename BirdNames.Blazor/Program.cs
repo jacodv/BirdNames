@@ -1,4 +1,5 @@
 using BirdNames.Core.Models;
+using BirdNames.Core.Settings;
 using BirdNames.Core.StartUp;
 using FluentValidation;
 using Radzen;
@@ -15,10 +16,16 @@ public class Program
     builder.Services.AddRazorPages();
     builder.Services.AddServerSideBlazor();
 
-    builder.Services.Configure<DatabaseSettings>(settings =>
-    {
+    builder.Services
+      .Configure<DatabaseSettings>(settings =>
+      {
         builder.Configuration.GetSection(nameof(DatabaseSettings)).Bind(settings);
-    }).AddOptions();
+      })
+      .Configure<BirdNamesCoreSettings>(settings =>
+      {
+        builder.Configuration.GetSection(nameof(BirdNamesCoreSettings)).Bind(settings);
+      })
+      .AddOptions();
 
     builder.Services.AddValidatorsFromAssemblyContaining<ModelVersionBaseValidator<BirdNamesOrder>>();
 
