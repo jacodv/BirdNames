@@ -1,4 +1,5 @@
 ﻿using BirdNames.Core.Models;
+using BirdNames.Core.Settings;
 
 namespace BirdNames.Core.Interfaces;
 
@@ -12,4 +13,6 @@ public interface IEBirdService
   Task VerifyAllUniqueSpecies(bool refresh, CancellationToken token = default);
   Task<MemoryStream?> DownloadKeywords(KeywordListCriteria criteria, CancellationToken token = default);
   Task TempWork();
+  bool IsValid();
+  Task<bool> ValidateSettings(BirdNamesCoreSettings settings);
 }

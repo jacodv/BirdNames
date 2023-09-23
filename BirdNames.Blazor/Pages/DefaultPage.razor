@@ -1,0 +1,19 @@
+﻿@page "/"
+@using BirdNames.Core.Settings
+@using Microsoft.Extensions.Options
+@using BirdNames.Core.Interfaces
+
+@inject NavigationManager Navigation
+@inject IOptions<BirdNamesCoreSettings> CoreSettings
+@inject IEBirdService EBirdsService
+
+
+<p style="font-style:italic">Navigating....</p>
+
+@code {
+  protected override async Task OnInitializedAsync()
+  {
+    await base.OnInitializedAsync();
+    Navigation.NavigateTo(EBirdsService.IsValid() ? "/home" : "/firsttimesetup");
+  }
+}

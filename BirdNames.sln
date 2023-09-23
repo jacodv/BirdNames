@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BirdNames.Dal", "BirdNames.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BirdNames.Core", "BirdNames.Core\BirdNames.Core.csproj", "{C4DA1C4D-D231-4507-8006-8E839AAE825D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BirdNames.Blazor", "BirdNames.Blazor\BirdNames.Blazor.csproj", "{6568C0CE-209C-4933-B5CE-C1882067F4D4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BirdNames.Blazor", "BirdNames.Blazor\BirdNames.Blazor.csproj", "{6568C0CE-209C-4933-B5CE-C1882067F4D4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

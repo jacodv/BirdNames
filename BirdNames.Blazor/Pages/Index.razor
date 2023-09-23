@@ -1,4 +1,4 @@
-﻿@page "/"
+﻿@page "/home/{valid:bool?}"
 
 <PageTitle>Index</PageTitle>
 
@@ -19,5 +19,11 @@
 
 <h3>Download</h3>
 <p>
-Configure and download a hierarchical bird names keyword list. Click <a href="/download">here</a>
+  Configure and download a hierarchical bird names keyword list. Click <a href="/download">here</a>
 </p>
+
+  @code
+  {
+    [Parameter]
+    public bool Valid { get; set; }
+  }

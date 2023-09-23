@@ -1,0 +1,144 @@
+﻿@page "/admin"
+@using BirdNames.Core.Interfaces
+@using BirdNames.Core.Settings
+@using BirdNames.Core.Xml
+@using Microsoft.Extensions.Options
+
+@implements IDisposable
+
+@inject IOptions<BirdNamesCoreSettings> CoreSettings;
+@inject ISettingsService SettingsService
+
+<h3>BirdNames Data Administration</h3>
+
+<div class="row">
+  <hr />
+  <div class="col-md-12">
+    Upload BirdNames Xml (https://www.worldbirdnames.org/new/ioc-lists/master-list-2/)
+  </div>
+</div>
+
+@if (!_isLoggedIn)
+{
+  <div class="row">
+    <hr />
+    <div class="col-md-12">
+      <RadzenLabel Component="adminPassword">Admin Password:</RadzenLabel>
+      <RadzenPassword @bind-Value=@_adminPassword Style="width:100%" Name="adminPassword" />
+      <RadzenButton ButtonStyle="ButtonStyle.Primary" Text="Login" Click=@_login Disabled=@(string.IsNullOrEmpty(_adminPassword)) />
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-12">
+      <pre style="color:red">@_loginError</pre>
+    </div>
+  </div>
+}
+
+
+<div class="row">
+  <hr />
+  <div class="col-md-12">
+    <RadzenLabel Text="IOC World Bird List (Xml):" />
+    <InputFile OnChange="_fileUploadChanged"></InputFile>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-4">
+    <RadzenButton ButtonStyle="ButtonStyle.Primary" Text="Upload" Click=@_uploadXmlFile Disabled="@(!_allowXmlUpload)" />
+  </div>
+  <div class="col-md-8">
+    <pre style="color:red">@_xmlFileError</pre>
+  </div>
+</div>
+
+@code {
+  bool _isLoggedIn = false;
+  string _adminPassword = string.Empty;
+  string? _loginError;
+
+  string? _xmlFileName;
+  long? _xmlFileSize;
+  MemoryStream? _xmlFileData;
+  string? _xmlFileError;
+  bool _allowXmlUpload = false;
+
+
+  private void _login()
+  {
+    _isLoggedIn = false;
+    _loginError = null;
+    var password = SettingsService.Unprotect(CoreSettings.Value.AdminPassword!);
+    if (password == _adminPassword)
+    {
+      _isLoggedIn = true;
+      _adminPassword = string.Empty;
+    }
+    else
+    {
+      _loginError = "Invalid password";
+    }
+  }
+
+  private async Task _uploadXmlFile()
+  {
+    try
+    {
+      _xmlFileData!.Position = 0;
+      await BirdNamesFx.ProcessXml(_xmlFileData, Program.ServiceProvider!);
+    }
+    catch (Exception e)
+    {
+      _xmlFileError = e.Message;
+    }
+  }
+
+  private const int _maxFileSize = 1024 * 1024 * 10;//10MB;
+  private async Task _fileUploadChanged(InputFileChangeEventArgs args)
+  {
+    _xmlFileError = null;
+    _allowXmlUpload = false;
+
+    try
+    {
+      if (args.File.Size > _maxFileSize)
+      {
+        _xmlFileError = $"File size too large: {args.File.Size}>{_maxFileSize}";
+        return;
+      }
+
+      if (args.File.ContentType != "text/xml")
+      {
+        _xmlFileError = $"Invalid file type: {args.File.ContentType}";
+        return;
+      }
+
+      _xmlFileName = args.File.Name;
+      _xmlFileSize = args.File.Size;
+
+      var buffer = new byte[args.File.Size];
+      _ = await args.File.OpenReadStream(int.MaxValue).ReadAsync(buffer).ConfigureAwait(false);
+
+      _xmlFileData = new MemoryStream(buffer);
+      _allowXmlUpload = true;
+      await InvokeAsync(StateHasChanged);
+
+      await Task.Yield();
+    }
+    catch (Exception e)
+    {
+      _allowXmlUpload = false;
+      _xmlFileError = e.Message;
+    }
+  }
+
+  #region Implementation of IDisposable
+
+  public void Dispose()
+  {
+    _xmlFileData?.Dispose();
+  }
+
+  #endregion
+
+}

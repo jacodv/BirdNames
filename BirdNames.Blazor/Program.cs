@@ -8,9 +8,17 @@ namespace BirdNames.Blazor;
 public class Program
 {
   public static IServiceProvider? ServiceProvider { get; set; }
+  public static IConfiguration? Configuration { get; set; }
+
   public static void Main(string[] args)
   {
     var builder = WebApplication.CreateBuilder(args);
+
+    Configuration = new ConfigurationBuilder()
+      .SetBasePath(AppContext.BaseDirectory!)
+      .AddJsonFile("appsettings.json", true, true)
+      .AddEnvironmentVariables()
+      .Build();
 
     // Add services to the container.
     builder.Services.AddRazorPages();
@@ -19,11 +27,11 @@ public class Program
     builder.Services
       .Configure<DatabaseSettings>(settings =>
       {
-        builder.Configuration.GetSection(nameof(DatabaseSettings)).Bind(settings);
+        Configuration.GetSection(nameof(DatabaseSettings)).Bind(settings);
       })
       .Configure<BirdNamesCoreSettings>(settings =>
       {
-        builder.Configuration.GetSection(nameof(BirdNamesCoreSettings)).Bind(settings);
+        Configuration.GetSection(nameof(BirdNamesCoreSettings)).Bind(settings);
       })
       .AddOptions();
 

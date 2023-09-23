@@ -1,7 +1,5 @@
 ﻿using System.Text;
-using System.Text.Json;
 using BirdNames.Core.Enums;
-using BirdNames.Core.Services;
 
 namespace BirdNames.Core.Models;
 

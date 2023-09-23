@@ -15,7 +15,7 @@ namespace BirdNames.Core.Services;
 public class EBirdService : IEBirdService
 {
   public const string Ignored = "Ignored";
-  private const string BaseUrl = "https://api.ebird.org";
+  private readonly string _baseUrl;
 
   private readonly IRepository<EBirdMajorRegion> _majorRegionRepository;
   private readonly IRepository<EBirdCountry> _countryRepository;
@@ -24,7 +24,7 @@ public class EBirdService : IEBirdService
   private readonly IRepository<EBirdSpecies> _speciesRepository;
   private readonly IValidator<EBirdSpecies> _speciesValidator;
   private readonly IOptions<BirdNamesCoreSettings> _settings;
-  private readonly HttpClient _client;
+  private readonly HttpClient?  _client;
 
   public EBirdService(
     IRepository<EBirdMajorRegion> majorRegionRepository,
@@ -43,8 +43,17 @@ public class EBirdService : IEBirdService
     _speciesValidator = speciesValidator;
     _settings = settings;
 
-    _client = new HttpClient() { BaseAddress = new Uri(BaseUrl, UriKind.Absolute) };
-    _client.DefaultRequestHeaders.Add(settings.Value.ApiKeyName, settings.Value.ApiKeyValue);
+    try
+    {
+      _baseUrl = settings.Value.EbirdBaseUrl;
+      _client = new HttpClient() { BaseAddress = new Uri(_baseUrl, UriKind.Absolute) };
+      _client.DefaultRequestHeaders.Add(settings.Value.EbirdApiKeyName, settings.Value.EbirdApiKeyValue);
+    }
+    catch
+    {
+      Console.WriteLine($"ERROR: Failed to construct:{nameof(EBirdService)} from settings");
+      _client = null;
+    }
   }
 
   public async Task ProcessSubRegion1(bool refresh, CancellationToken token = default)
@@ -193,6 +202,8 @@ public class EBirdService : IEBirdService
   }
   public Task TempWork()
   {
+    throw new NotImplementedException();
+
     var speciesCount = _speciesRepository.AsQueryable().Count();
     var speciesSciNames = _speciesRepository
       .AsQueryable()
@@ -218,7 +229,24 @@ public class EBirdService : IEBirdService
 
     return Task.CompletedTask;
   }
+  public bool IsValid()
+  {
+    // ReSharper disable once ConvertIfStatementToReturnStatement
+    if(string.IsNullOrWhiteSpace(_baseUrl) || _client==null || _settings?.Value is not { AdminPasswordSet: true })
+      return false;
 
+    return true;
+  }
+  public async Task<bool> ValidateSettings(BirdNamesCoreSettings settings)
+  {
+    var client = new HttpClient() { BaseAddress = new Uri(settings.EbirdBaseUrl, UriKind.Absolute) };
+    client.DefaultRequestHeaders.Add(settings.EbirdApiKeyName, settings.EbirdApiKeyValue);
+
+    var path = "/v2/ref/region/list/subnational1/ZA";
+    var response = await client.GetAsync(path);
+    return response.IsSuccessStatusCode;
+  }
+  
 
   #region Private
   private async Task _getAndPersistSubRegions1(string countryCode, CancellationToken token)

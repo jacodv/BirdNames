@@ -1,7 +1,6 @@
 ﻿using BirdNames.Core.Interfaces;
 using BirdNames.Core.Models;
 using BirdNames.Core.Services;
-using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 namespace BirdNames.Core.Xml;
 

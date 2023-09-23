@@ -1,0 +1,226 @@
+﻿@page "/firsttimesetup/{Navigated:bool?}"
+
+@using BirdNames.Core.Interfaces
+@using BirdNames.Core.Models
+@using BirdNames.Core.Settings
+@using Microsoft.Extensions.Options
+@using JsonSerializer = System.Text.Json.JsonSerializer
+@using System.Text.Json
+
+@inject NavigationManager Navigation
+@inject IEBirdService EBirdsService
+@inject ISettingsService SettingsService
+@inject IOptions<BirdNamesCoreSettings> CoreSettings
+@inject IOptions<DatabaseSettings> DbSettings
+
+<PageTitle>Onetime Setup</PageTitle>
+
+<h3>Setup the BirdNames application</h3>
+
+<RadzenTemplateForm TItem="BirdNamesCoreSettings" Data=@CoreSettings.Value Submit=@_validateForm InvalidSubmit=@_formValidationFailed>
+<div class="row">
+  <hr />
+  <div class="col-md-4">
+    <RadzenText TextStyle="TextStyle.DisplayH6" Text="Status:"></RadzenText>
+  </div>
+  <div class="col-md-4">
+    <RadzenText TextStyle="TextStyle.Subtitle1">EBirdsService is @(EBirdsService.IsValid() ? "valid" : "not valid")</RadzenText>
+    </div>
+    <div class="col-md-4">
+      <RadzenText TextStyle="TextStyle.Subtitle1">Navigated: @Navigated</RadzenText>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-12">
+      <hr />
+      <RadzenText TextStyle="TextStyle.DisplayH6" Text="EBird Api Setup"></RadzenText>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-4">
+      <RadzenLabel Component="apiKeyTextBox" TextStyle="TextStyle.Subtitle1" Text="EBird Api Key:"></RadzenLabel>
+      <RadzenTextBox @bind-Value=@CoreSettings.Value.EbirdApiKeyValue Name="apiKeyTextBox" Style="width:100%"></RadzenTextBox>
+        <RadzenRequiredValidator Component="apiKeyTextBox" Text="EBird Api Key is required"></RadzenRequiredValidator>
+    </div>
+    <div class="col-md-4">
+      <RadzenLabel Component="apiNameTextBox" TextStyle="TextStyle.Subtitle1" Text="EBird Api Name:"></RadzenLabel>
+      <RadzenTextBox @bind-Value=@CoreSettings.Value.EbirdApiKeyName Name="apiNameTextBox" Style="width:100%" Disabled="true"></RadzenTextBox>
+    </div>
+    <div class="col-md-4">
+      <RadzenLabel Component="apiUrlTextBox" TextStyle="TextStyle.Subtitle1" Text="EBird Api Name:"></RadzenLabel>
+      <RadzenTextBox @bind-Value=@CoreSettings.Value.EbirdBaseUrl Name="apiUrlTextBox" Style="width:100%" Disabled="true"></RadzenTextBox>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-12">
+      <hr />
+      <RadzenText TextStyle="TextStyle.DisplayH6" Text="MongoDB Connection String"></RadzenText>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-4">
+      <RadzenLabel Component="connectionStringTextBox" TextStyle="TextStyle.Subtitle1" Text="Connection String:"></RadzenLabel>
+      <RadzenTextBox @bind-Value=@DbSettings.Value.ConnectionString Name="connectionStringTextBox" Style="width:100%" Disabled="true"></RadzenTextBox>
+    </div>
+    <div class="col-md-4">
+      <RadzenLabel Component="databaseNameTextBox" TextStyle="TextStyle.Subtitle1" Text="Database Name:"></RadzenLabel>
+      <RadzenTextBox @bind-Value=@DbSettings.Value.DatabaseName Name="databaseNameTextBox" Style="width:100%" Disabled="true" ></RadzenTextBox>
+    </div>
+    <div class="col-md-4">
+      <RadzenButton ButtonStyle="ButtonStyle.Secondary" Text="Test" Click="@_testConnectionString"></RadzenButton>
+      <div style="color: blue">@_message</div>
+    </div>
+  </div>
+
+  @if (!CoreSettings.Value.AdminPasswordSet)
+{
+  <div class="row">
+    <div class="col-md-12">
+      <hr />
+      <RadzenText TextStyle="TextStyle.DisplayH6" Text="BirdNames Admin Password"></RadzenText>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-16">
+      <RadzenLabel Component="adminPasswordTextBox" TextStyle="TextStyle.Subtitle1" Text="Admin Password:"></RadzenLabel>
+      <RadzenPassword @bind-Value=@_adminPassword Name="adminPasswordTextBox" Style="width:100%"></RadzenPassword>
+      <RadzenRequiredValidator Component="adminPasswordTextBox" Text="Admin Password is required"></RadzenRequiredValidator>
+      <RadzenPassword @bind-Value=@_adminPasswordConfirm Name="adminPasswordConfirm" Style="width:100%"></RadzenPassword>
+      <RadzenRequiredValidator Component="adminPasswordConfirm" Text="Confirm password"></RadzenRequiredValidator>
+      <RadzenCompareValidator 
+        Component="adminPasswordConfirm" 
+        Text="Passwords do not match" 
+        
+        Visible=@(!CoreSettings.Value.AdminPasswordSet)
+        Value=@_adminPassword></RadzenCompareValidator>
+    </div>
+    <div class="col-md-16">
+      <RadzenLabel Component="adminPasswordHintTextBox" TextStyle="TextStyle.Subtitle1" Text="Admin Password Hint:"></RadzenLabel>
+      <RadzenTextBox @bind-Value=@CoreSettings.Value.AdminPasswordHint Name="adminPasswordHintTextBox" Style="width:100%"></RadzenTextBox>
+      <RadzenRequiredValidator Component="adminPasswordHintTextBox" Text="Admin Password Hint is required"></RadzenRequiredValidator>
+    </div>
+  </div>
+}
+
+<div class="row">
+  <div class="col-md-12">
+    <hr />
+    <RadzenButton ButtonStyle="ButtonStyle.Secondary" Text="Validate" ButtonType="ButtonType.Submit"></RadzenButton>
+    <RadzenButton ButtonStyle="ButtonStyle.Primary" Text="Save" Click="@_saveSettings" Disabled="_settingsNotValidated"></RadzenButton>
+  </div>
+</div>
+@if (!string.IsNullOrEmpty(_error))
+{
+  <div class="row">
+    <div class="col-md-12">
+      <hr />
+      <div>ERROR:</div>
+      <pre style="color:red">@_error</pre>
+    </div>
+  </div>
+}
+@if (!string.IsNullOrEmpty(_message))
+{
+  <div class="row">
+    <hr />
+    <div class="col-md-12">
+      <div>Status: </div>
+      <div style="color:blue">@_message</div>
+    </div>
+  </div>
+}
+</RadzenTemplateForm>
+
+@code {
+
+  string? _adminPassword;
+  string? _adminPasswordConfirm;
+  bool _settingsNotValidated = true;
+  string? _error;
+  string? _message;
+
+  [Parameter]
+  public bool Navigated { get; set; }
+
+  protected override async Task OnInitializedAsync()
+  {
+    try
+    {
+      await base.OnInitializedAsync();
+      if (EBirdsService.IsValid() && !Navigated)
+        Navigation.NavigateTo("/home/true");
+    }
+    catch (Exception e)
+    {
+      _error = e.ToString();
+    }
+  }
+  private async Task _saveSettings()
+  {
+    _error = null;
+    _message = null;
+    try
+    {
+      if(!CoreSettings.Value.AdminPasswordSet)
+      {
+        var protectedPassword = SettingsService.Protect(_adminPassword!);
+        CoreSettings.Value.AdminPassword = protectedPassword;
+        CoreSettings.Value.AdminPasswordSet = true;
+      }
+
+      await SettingsService.SaveSettings(CoreSettings.Value);
+      _message = "Settings saved";
+      _settingsNotValidated = true;
+    }
+    catch (Exception e)
+    {
+      _settingsNotValidated = true;
+      _message = null;
+      _error = e.ToString();
+    }
+  }
+  private async Task _testConnectionString()
+  {
+    _error = null;
+    _message = null;
+
+    try
+    {
+      var result = await SettingsService.TestDatabaseConnection(DbSettings.Value);
+      _message = result ?
+        "Connection successful" :
+        "Connection failed";
+    }
+    catch (Exception e)
+    {
+      _message = null;
+      _error = e.Message;
+    }
+  }
+  private void _formValidationFailed(FormInvalidSubmitEventArgs args)
+  {
+    _message = null;
+    _error = $"InvalidSubmit: {JsonSerializer.Serialize(args, new JsonSerializerOptions() { WriteIndented = true })}";
+  }
+private async Task _validateForm(BirdNamesCoreSettings settings)
+  {
+  _error = null;
+  _message = null;
+  _settingsNotValidated = true;
+
+  try
+  {
+    _settingsNotValidated = !(await EBirdsService.ValidateSettings(CoreSettings.Value));
+    _message = !_settingsNotValidated ?
+      "Settings are valid" :
+      "Settings validation failed";
+  }
+  catch (Exception e)
+  {
+    _settingsNotValidated = true;
+    _error = e.Message;
+    _message = null;
+  }  }
+}

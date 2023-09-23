@@ -59,6 +59,7 @@ internal class Program
       .AddJsonFile(SettingsFileName, true, true)
       .AddEnvironmentVariables()
       .Build();
+
     var services = new ServiceCollection()
       .Configure<DatabaseSettings>(settings =>
       {
