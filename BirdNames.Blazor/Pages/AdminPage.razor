@@ -1,0 +1,45 @@
+﻿@page "/admin"
+@inherits AdminPageBase
+
+
+<h3>BirdNames Data Administration</h3>
+
+<div class="row">
+  <hr />
+  <div class="col-md-12">
+    Upload BirdNames Xml (https://www.worldbirdnames.org/new/ioc-lists/master-list-2/)
+  </div>
+</div>
+
+@if (!IsLoggedIn)
+{
+  <div class="row">
+    <hr />
+    <div class="col-md-12">
+      <RadzenLabel Component="adminPassword">Admin Password: <b><i>{Enter} or {Tab} to continue</i></b></RadzenLabel>
+      <RadzenPassword @bind-Value=@AdminPassword Style="width:100%" Name="adminPassword" />
+      <RadzenButton ButtonStyle="ButtonStyle.Primary" Text="Login" Click=@Login />
+    </div>
+  </div>
+}
+
+
+<div class="row">
+  <hr />
+  <div class="col-md-12">
+    <RadzenLabel Text="IOC World Bird List (Xml):" />
+    @if (IsLoggedIn)
+    {
+      <InputFile OnChange="OnFileUploadChanged"></InputFile>
+    }
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-12">
+    <RadzenButton ButtonStyle="ButtonStyle.Primary" Text="Upload" Click="@(async ()=>await ProcessUploadedXml())" Disabled="@(!AllowXmlUpload && !IsLoggedIn)" />
+  </div>
+</div>
+
+@code {
+
+}
