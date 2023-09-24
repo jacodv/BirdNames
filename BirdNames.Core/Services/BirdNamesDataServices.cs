@@ -3,6 +3,7 @@ using BirdNames.Core.Interfaces;
 using BirdNames.Core.Models;
 using BirdNames.Dal.Interfaces;
 using FluentValidation;
+using Microsoft.Extensions.Logging;
 
 // ReSharper disable ConvertToLocalFunction
 #pragma warning disable IDE0039
@@ -11,6 +12,7 @@ namespace BirdNames.Core.Services;
 
 public sealed class BirdNamesDataServices : IBirdNamesDataServices
 {
+  private readonly ILogger<BirdNamesDataServices> _logger;
   private readonly IRepository<BirdNamesOrder> _orderRepository;
   private readonly IRepository<BirdNamesFamily> _familyRepository;
   private readonly IRepository<BirdNamesGenus> _genusRepository;
@@ -22,6 +24,7 @@ public sealed class BirdNamesDataServices : IBirdNamesDataServices
   private readonly IValidator<BirdNamesSpecies> _speciesValidator;
 
   public BirdNamesDataServices(
+    ILogger<BirdNamesDataServices> logger,
     IRepository<BirdNamesOrder> orderRepository,
     IRepository<BirdNamesFamily> familyRepository,
     IRepository<BirdNamesGenus> genusRepository,
@@ -33,6 +36,7 @@ public sealed class BirdNamesDataServices : IBirdNamesDataServices
     IValidator<BirdNamesSpecies> speciesValidator
     )
   {
+    _logger = logger;
     _orderRepository = orderRepository;
     _familyRepository = familyRepository;
     _genusRepository = genusRepository;
@@ -46,14 +50,14 @@ public sealed class BirdNamesDataServices : IBirdNamesDataServices
 
   public async Task PersistProcessedItems(ProcessedItemsModel model, CancellationToken token=default)
   {
-    await _persist(model.Version, model.Orders, _orderRepository, _orderValidator, token);
-    await _persist(model.Version, model.Families, _familyRepository, _familyValidator, token);
-    await _persist(model.Version, model.Genera, _genusRepository, _genusValidator, token);
-    await _persist(model.Version, model.Species, _speciesRepository, _speciesValidator, token);
-    await _persist(model.Version, model.Regions, _regionsRepository, null, token);
+    await _persist(model.Version, model.Orders, _orderRepository, _orderValidator, token, logger:_logger);
+    await _persist(model.Version, model.Families, _familyRepository, _familyValidator, token, logger:_logger);
+    await _persist(model.Version, model.Genera, _genusRepository, _genusValidator, token, logger:_logger);
+    await _persist(model.Version, model.Species, _speciesRepository, _speciesValidator, token, logger:_logger);
+    await _persist(model.Version, model.Regions, _regionsRepository, null, token, logger:_logger);
   }
 
-  private static async Task _persist<T>(string version, ICollection<T> items, IRepository<T> repo, IValidator<T>? validator, CancellationToken token)
+  private static async Task _persist<T>(string version, ICollection<T> items, IRepository<T> repo, IValidator<T>? validator, CancellationToken token, ILogger logger)
     where T : ModelVersionBase
   {
     var hasValidationErrors = false;
@@ -65,26 +69,26 @@ public sealed class BirdNamesDataServices : IBirdNamesDataServices
         var validationResult = validator?.Validate(item);
         Interlocked.Increment(ref validateCount);
         if(validateCount % 200 == 0)
-          Console.WriteLine($"Validated {validateCount} {typeof(T)}");
+          logger.LogDebug($"Validated {validateCount} {typeof(T)}");
         if (validationResult?.IsValid==true)
           return Task.CompletedTask;
 
         hasValidationErrors = true;
-        Console.WriteLine($"Validation failed for: {typeof(T)}:{item}");
+        logger.LogWarning($"Validation failed for: {typeof(T)}:{item}");
         foreach (var error in validationResult!.Errors)
-          Console.WriteLine($"  {error}");
+          logger.LogWarning($"  {error}");
         throw new InvalidOperationException("Processing stopped due to validation errors");
       }
       catch (Exception e)
       {
-        Console.WriteLine($"Validation failed for: {typeof(T)}:{item}.  {e.Message}");
+        logger.LogError($"Validation failed for: {typeof(T)}:{item}.  {e.Message}", e);
         hasValidationErrors = true;
         return Task.CompletedTask;
       }
     };
 
     if(validator!=null)
-      await items.ProcessInParallel(true, handleItem, _ => false, token,delay:0);
+      await items.ProcessInParallel(true, handleItem, _ => false, token,delay:0, logger:logger);
 
     // If there are validation errors, don't persist
     if(token.IsCancellationRequested)
@@ -93,9 +97,9 @@ public sealed class BirdNamesDataServices : IBirdNamesDataServices
       throw new InvalidOperationException("Processing stopped due to validation errors");
 
     var result = await repo.DeleteManyAsync(x=>x.Version == version);
-    Console.WriteLine($"Deleted {result.DeletedCount} {typeof(T)}");
+    logger.LogInformation($"Deleted {result.DeletedCount} {typeof(T)}");
 
     await repo.InsertManyAsync(items);
-    Console.WriteLine($"Inserted: {items.Count} {typeof(T)}");
+    logger.LogInformation($"Inserted: {items.Count} {typeof(T)}");
   }
 }

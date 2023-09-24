@@ -7,12 +7,15 @@ using BirdNames.Core.Helpers;
 using BirdNames.Core.Interfaces;
 using BirdNames.Core.Models;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace BirdNames.Core.Xml;
 
-public sealed class BirdNamesXmlProcessor : IDisposable, IAsyncDisposable
+public sealed class BirdNamesXmlProcessorService : IBirdNamesXmlProcessorService
 {
-  private readonly Stream _xmlSource;
+  private readonly ILogger<BirdNamesXmlProcessorService> _logger;
+  private readonly IBirdNamesDataServices _birdNamesDataServices;
+  private Stream? _xmlSource;
   private string? _listVersion;
   private int? _listYear;
 
@@ -30,27 +33,31 @@ public sealed class BirdNamesXmlProcessor : IDisposable, IAsyncDisposable
 
   private Dictionary<string, BirdNamesRegion> _regions = new();
 
-  public BirdNamesXmlProcessor(Stream xmlSource)
+  public BirdNamesXmlProcessorService(ILogger<BirdNamesXmlProcessorService> logger, IBirdNamesDataServices birdNamesDataServices)
   {
-    _xmlSource = xmlSource;
+    _logger = logger;
+    _birdNamesDataServices = birdNamesDataServices;
   }
 
   #region IDisposable
 
   public void Dispose()
   {
-    _xmlSource.Dispose();
+    _xmlSource?.Dispose();
   }
 
   public async ValueTask DisposeAsync()
   {
-    await _xmlSource.DisposeAsync();
+    if(_xmlSource!=null)
+      await _xmlSource.DisposeAsync();
   }
 
   #endregion
 
-  public async Task ProcessXml(IServiceProvider serviceProvider)
+  public async Task ProcessXml(Stream xmlSource)
   {
+    _xmlSource = xmlSource;
+
     var settings = new XmlReaderSettings
     {
       Async = false,
@@ -63,13 +70,12 @@ public sealed class BirdNamesXmlProcessor : IDisposable, IAsyncDisposable
     //xmlReader.MoveToContent();
     _processXDoc(xmlReader);
 
-    Console.WriteLine($"List Version: {_listVersion}, List Year: {_listYear}");
-    Console.WriteLine($"Orders: {_orders.Count}, " +
-                      $"Families: {_families.Count}, " +
-                      $"Genera: {_genera.Count}, " +
-                      $"Species: {_species.Count}");
+    _logger.LogInformation($"List Version: {_listVersion}, List Year: {_listYear}");
+    _logger.LogInformation($"Orders: {_orders.Count}, " +
+                          $"Families: {_families.Count}, " +
+                          $"Genera: {_genera.Count}, " +
+                          $"Species: {_species.Count}");
 
-    var dataService = serviceProvider.GetService<IBirdNamesDataServices>()!;
     var model = new ProcessedItemsModel(_listVersion!)
     {
       Orders = _orders.ToList(),
@@ -78,7 +84,7 @@ public sealed class BirdNamesXmlProcessor : IDisposable, IAsyncDisposable
       Species = _species.ToList(),
       Regions = _regions.Values.ToList()
     };
-    await dataService.PersistProcessedItems(model);
+    await _birdNamesDataServices.PersistProcessedItems(model);
   }
 
   private void _processXDoc(XmlReader reader)
@@ -123,7 +129,7 @@ public sealed class BirdNamesXmlProcessor : IDisposable, IAsyncDisposable
     var (instance, nextElements) = _processAndAssign(element, _species, "subspecies");
     _currentSpecies = instance;
 
-    var regions = BirdNamesRegion.FromSpecies(_currentSpecies!);
+    var regions = BirdNamesRegion.FromSpecies(_currentSpecies!, _logger);
     foreach (var region in regions)
     {
       if (!_regions.ContainsKey(region.Code))
@@ -159,7 +165,7 @@ public sealed class BirdNamesXmlProcessor : IDisposable, IAsyncDisposable
 
         if (!BirdDataHelper.PropertyNameLookup.ContainsKey(child.Name.LocalName))
         {
-          Console.WriteLine($"Unknown {child.Name.LocalName}");
+          _logger.LogWarning($"Unknown {child.Name.LocalName}");
           continue;
         }
 

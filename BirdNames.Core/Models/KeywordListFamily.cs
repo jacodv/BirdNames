@@ -1,5 +1,6 @@
 ﻿using BirdNames.Core.Enums;
 using BirdNames.Core.Services;
+using Microsoft.Extensions.Logging;
 
 namespace BirdNames.Core.Models;
 
@@ -12,14 +13,14 @@ public class KeywordListFamily : KeywordListItem<KeywordListGenus>
     Latin = latin;
   }
 
-  public void BuildGenera(KeywordListCriteria criteria, IList<EBirdSpecies> species)
+  public void BuildGenera(KeywordListCriteria criteria, IList<EBirdSpecies> species, ILogger logger)
   {
     if (!criteria.Depth.HasFlag(KeywordDepth.Genus))
     {
-      Console.WriteLine($"\t\tIgnoring genera: {this}");
+      logger.LogInformation($"\t\tIgnoring genera: {this}");
       var ignoredGenus = new KeywordListGenus(EBirdService.Ignored, EBirdService.Ignored) { Ignore = true };
 
-      ignoredGenus.BuildSpecies(criteria, species);
+      ignoredGenus.BuildSpecies(criteria, species, logger);
       Items.Add(ignoredGenus);
       return;
     }
@@ -28,11 +29,11 @@ public class KeywordListFamily : KeywordListItem<KeywordListGenus>
       .GroupBy(x => x.SciName.Split(' ')[0])
       .ToList();
 
-    Console.WriteLine($"\t\tGenera:{genera.Count} for Family:{this.Latin} and Species:{species.Count}");
+    logger.LogInformation($"\t\tGenera:{genera.Count} for Family:{this.Latin} and Species:{species.Count}");
     foreach (var genus in genera)
     {
       var genusItem = new KeywordListGenus(genus.Key, genus.Key);
-      genusItem.BuildSpecies(criteria, species.Where(x => x.SciName.StartsWith(genus.Key)).ToList());
+      genusItem.BuildSpecies(criteria, species.Where(x => x.SciName.StartsWith(genus.Key)).ToList(), logger);
       Items.Add(genusItem);
     }
   }

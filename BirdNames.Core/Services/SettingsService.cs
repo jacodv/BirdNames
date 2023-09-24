@@ -4,14 +4,17 @@ using BirdNames.Core.Settings;
 using BirdNames.Dal.Helpers;
 using BirdNames.Dal.Interfaces;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.Extensions.Logging;
 
 namespace BirdNames.Core.Services;
 public class SettingsService: ISettingsService
 {
+  private readonly ILogger<SettingsService> _logger;
   private readonly IDataProtectionProvider _dataProtectionProvider;
 
-  public SettingsService(IDataProtectionProvider dataProtectionProvider)
+  public SettingsService(ILogger<SettingsService> logger, IDataProtectionProvider dataProtectionProvider)
   {
+    _logger = logger;
     _dataProtectionProvider = dataProtectionProvider;
   }
 
@@ -39,9 +42,18 @@ public class SettingsService: ISettingsService
     }
   }
 
-  public Task<bool> TestDatabaseConnection(IDatabaseSettings settings)
+  public async Task<bool> TestDatabaseConnection(IDatabaseSettings settings)
   {
-    return MongoHelper.TestConnection(settings);
+    try
+    {
+      await MongoHelper.TestConnection(settings);
+      return true;
+    }
+    catch (Exception e)
+    {
+      _logger.LogError(e, $"Failed to connect to database.  {e.Message}");
+      return false;
+    }
   }
 
   public string Protect(string valueToProtect)

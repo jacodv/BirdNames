@@ -1,14 +1,17 @@
 ﻿using BirdNames.Core.Helpers;
 using BirdNames.Core.Models;
 using BirdNames.Dal.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace BirdNames.Core.Services;
 public class CountryService: ICountryService
 {
+  private readonly ILogger<CountryService> _logger;
   private readonly IRepository<EBirdCountry> _countryRepository;
 
-  public CountryService(IRepository<EBirdCountry> countryRepository)
+  public CountryService(ILogger<CountryService> logger, IRepository<EBirdCountry> countryRepository)
   {
+    _logger = logger;
     _countryRepository = countryRepository;
   }
 
@@ -35,10 +38,10 @@ public class CountryService: ICountryService
         delimiters: new[] { "," });
       
       await _countryRepository.ClearCollectionAsync(); // Clear the collection
-      Console.WriteLine($"Deleted all countries");
+      _logger.LogInformation($"Deleted all countries");
 
       await _countryRepository.InsertManyAsync(countries);
-      Console.WriteLine($"Inserted {totalProcessed} countries");
+      _logger.LogInformation($"Inserted {totalProcessed} countries");
     }
     catch (Exception e)
     {

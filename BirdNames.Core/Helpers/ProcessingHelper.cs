@@ -1,7 +1,9 @@
-﻿namespace BirdNames.Core.Helpers;
+﻿using Microsoft.Extensions.Logging;
+
+namespace BirdNames.Core.Helpers;
 public static class ProcessingHelper
 {
-  public static async Task ProcessInParallel<T>(this IEnumerable<T> items, bool refresh, Func<T,Task>? handleItem, Func<T,bool> existsExpression, CancellationToken token, int delay = 250)
+  public static async Task ProcessInParallel<T>(this IEnumerable<T> items, bool refresh, Func<T,Task>? handleItem, Func<T,bool> existsExpression, CancellationToken token, ILogger logger, int delay = 250)
   {
     var options = new ParallelOptions { MaxDegreeOfParallelism = 4 };
     var hasErrors = false;
@@ -15,7 +17,7 @@ public static class ProcessingHelper
         var exist = existsExpression(item);
         if (exist && !refresh)
         {
-          Console.WriteLine($"Skipping {typeof(T)}:{item}");
+          logger.LogDebug($"Skipping {typeof(T)}:{item}");
           return;
         }
 
@@ -24,7 +26,7 @@ public static class ProcessingHelper
       }
       catch (Exception e)
       {
-        Console.WriteLine($"ProcessInParallel failed: {typeof(T)}:{item}.  {e.Message}");
+        logger.LogWarning($"ProcessInParallel failed: {typeof(T)}:{item}.  {e.Message}");
         hasErrors = true;
       }
       if(delay>0)

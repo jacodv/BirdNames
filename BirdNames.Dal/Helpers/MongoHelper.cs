@@ -3,21 +3,14 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace BirdNames.Dal.Helpers;
-public class MongoHelper
+public static class MongoHelper
 {
-  public static async Task<bool> TestConnection(IDatabaseSettings settings)
+  public static async Task TestConnection(IDatabaseSettings settings)
   {
-    try
-    {
-      var client = new MongoClient(settings.ConnectionString);
+    // ReSharper disable once UseObjectOrCollectionInitializer
+    var client = new MongoClient(settings.ConnectionString);
+      client.Settings.ConnectTimeout = TimeSpan.FromSeconds(5);
       var database = client.GetDatabase(settings.DatabaseName);
       await database.RunCommandAsync((Command<BsonDocument>)"{ping:1}");
-      return true;
-    }
-    catch (Exception e)
-    {
-      Console.WriteLine(e);
-      return false;
-    }
   }
 }

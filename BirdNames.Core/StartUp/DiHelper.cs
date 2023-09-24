@@ -1,6 +1,7 @@
 ﻿using BirdNames.Core.Interfaces;
 using BirdNames.Core.Models;
 using BirdNames.Core.Services;
+using BirdNames.Core.Xml;
 using BirdNames.Dal;
 using BirdNames.Dal.Interfaces;
 using Microsoft.AspNetCore.DataProtection;
@@ -31,5 +32,6 @@ public static class DiHelper
     services.AddScoped<IEBirdService, EBirdService>();
     services.AddScoped<IDatabaseStatisticsService, DatabaseStatisticsService>();
     services.AddScoped<ISettingsService, SettingsService>();
+    services.AddTransient<IBirdNamesXmlProcessorService, BirdNamesXmlProcessorService>();
   }
 }

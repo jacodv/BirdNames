@@ -1,5 +1,6 @@
 ﻿using BirdNames.Core.Helpers;
 using BirdNames.Dal;
+using Microsoft.Extensions.Logging;
 
 namespace BirdNames.Core.Models;
 
@@ -18,7 +19,7 @@ public class BirdNamesRegion: ModelVersionBase
   public string? Notes { get; set; }
 
 
-  public static List<BirdNamesRegion> FromSpecies(BirdNamesSpecies birdNamesSpecies)
+  public static List<BirdNamesRegion> FromSpecies(BirdNamesSpecies birdNamesSpecies, ILogger logger)
   {
     var addCoastal = false;
     var nonBreedingSubRegions = new List<string>();
@@ -59,12 +60,10 @@ public class BirdNamesRegion: ModelVersionBase
           addCoastal = true;
           continue;
         }
-        else
-        {
-          nonBreedingSubRegions.Add(regionCode);
-          Console.WriteLine($"Region code {regionCode} not found in RegionsLookup.  Species:{birdNamesSpecies.Name} br:{birdNamesSpecies.BreedingRegions}, nbr:{birdNamesSpecies.NonBreedingRegions}");
-          continue;
-        }
+
+        nonBreedingSubRegions.Add(regionCode);
+        logger.LogWarning($"Region code {regionCode} not found in RegionsLookup.  Species:{birdNamesSpecies.Name} br:{birdNamesSpecies.BreedingRegions}, nbr:{birdNamesSpecies.NonBreedingRegions}");
+        continue;
       }
 
       var (name, notes) = BirdDataHelper.RegionsLookup[regionCode];

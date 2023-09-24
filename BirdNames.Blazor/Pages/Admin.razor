@@ -1,14 +1,19 @@
 ﻿@page "/admin"
 @using BirdNames.Core.Interfaces
 @using BirdNames.Core.Settings
-@using BirdNames.Core.Xml
 @using Microsoft.Extensions.Options
+@using Microsoft.AspNetCore.Hosting
+
 
 @implements IDisposable
 
+@inject IWebHostEnvironment Environment
 @inject IOptions<BirdNamesCoreSettings> CoreSettings;
 @inject ISettingsService SettingsService
 @inject NotificationService NotificationService
+@inject IBirdNamesXmlProcessorService BirdNamesFx
+
+@inject ILogger<Admin> Logger
 
 <h3>BirdNames Data Administration</h3>
 
@@ -24,7 +29,7 @@
   <div class="row">
     <hr />
     <div class="col-md-12">
-      <RadzenLabel Component="adminPassword">Admin Password:</RadzenLabel>
+      <RadzenLabel Component="adminPassword">Admin Password: <b><i>{Enter} or {Tab} to continue</i></b></RadzenLabel>
       <RadzenPassword @bind-Value=@_adminPassword Style="width:100%" Name="adminPassword" />
       <RadzenButton ButtonStyle="ButtonStyle.Primary" Text="Login" Click=@_login Disabled=@(string.IsNullOrEmpty(_adminPassword)) />
     </div>
@@ -41,12 +46,14 @@
   <hr />
   <div class="col-md-12">
     <RadzenLabel Text="IOC World Bird List (Xml):" />
-    <InputFile OnChange="_fileUploadChanged"></InputFile>
+    @if(_isLoggedIn){
+      <InputFile OnChange="_fileUploadChanged" ></InputFile>
+    }
   </div>
 </div>
 <div class="row">
   <div class="col-md-4">
-    <RadzenButton ButtonStyle="ButtonStyle.Primary" Text="Upload" Click=@_uploadXmlFile Disabled="@(!_allowXmlUpload && !_isLoggedIn)" />
+    <RadzenButton ButtonStyle="ButtonStyle.Primary" Text="Upload" Click="@(async ()=>await _uploadXmlFile())" Disabled="@(!_allowXmlUpload && !_isLoggedIn)" />
   </div>
   <div class="col-md-8">
     <pre style="color:red">@_xmlFileError</pre>
@@ -58,7 +65,7 @@
   string _adminPassword = string.Empty;
   string? _loginError;
 
-  MemoryStream? _xmlFileData;
+  const string XmlTempFile = "temp/ioc.xml";
   string? _xmlFileError;
   bool _allowXmlUpload = false;
 
@@ -79,18 +86,37 @@
       _loginError = "Invalid password";
     }
   }
+
+  private string _getTempXmlFilePath()
+  {
+    return Path.Combine(Path.Combine(Environment.ContentRootPath, XmlTempFile));
+  }
   private async Task _uploadXmlFile()
   {
+    var tempXmlFilePath = _getTempXmlFilePath();
     try
     {
-      _xmlFileData!.Position = 0;
-      await BirdNamesFx.ProcessXml(_xmlFileData, Program.ServiceProvider!);
+      if (!File.Exists(tempXmlFilePath))
+        throw new FileNotFoundException("Xml file not found", tempXmlFilePath);
+
+      await using var fileStream = File.OpenRead(tempXmlFilePath);
+      await BirdNamesFx.ProcessXml(fileStream);
+      fileStream.Close();
       NotificationService.Notify(NotificationSeverity.Success, "Process Complete", "IOC World Bird List uploaded and processed");
+      _xmlFileError = "Done";
+      await Task.Yield();
     }
     catch (Exception e)
     {
+      Logger.LogError(e, $"Xml File Process Error: {e.Message}");
       NotificationService.Notify(NotificationSeverity.Error, "Process Error", e.Message);
       _xmlFileError = e.Message;
+      await Task.Yield();
+    }
+    finally
+    {
+      if (File.Exists(tempXmlFilePath))
+        File.Delete(tempXmlFilePath);
     }
   }
 
@@ -99,6 +125,7 @@
   {
     _xmlFileError = null;
     _allowXmlUpload = false;
+    var tempXmlFilePath = _getTempXmlFilePath();
 
     try
     {
@@ -114,10 +141,10 @@
         return;
       }
 
-      var buffer = new byte[args.File.Size];
-      _ = await args.File.OpenReadStream(int.MaxValue).ReadAsync(buffer).ConfigureAwait(false);
+      await using var file = File.Create(tempXmlFilePath);
+      await args.File.OpenReadStream(int.MaxValue).CopyToAsync(file);
+      file.Close();
 
-      _xmlFileData = new MemoryStream(buffer);
       _allowXmlUpload = true;
       await InvokeAsync(StateHasChanged);
 
@@ -126,8 +153,9 @@
     }
     catch (Exception e)
     {
+      Logger.LogError(e, $"Xml File Upload Error: {e.Message}");
       _allowXmlUpload = false;
-NotificationService.Notify(NotificationSeverity.Error, "Upload Error", e.Message);
+      NotificationService.Notify(NotificationSeverity.Error, "Upload Error", e.Message);
       _xmlFileError = e.Message;
     }
   }
@@ -136,7 +164,7 @@ NotificationService.Notify(NotificationSeverity.Error, "Upload Error", e.Message
 
   public void Dispose()
   {
-    _xmlFileData?.Dispose();
+    BirdNamesFx?.Dispose();
   }
 
   #endregion

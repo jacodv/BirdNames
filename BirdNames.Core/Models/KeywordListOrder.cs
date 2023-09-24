@@ -1,5 +1,6 @@
 ﻿using BirdNames.Core.Enums;
 using BirdNames.Core.Services;
+using Microsoft.Extensions.Logging;
 
 namespace BirdNames.Core.Models;
 
@@ -9,14 +10,14 @@ public class KeywordListOrder : KeywordListItem<KeywordListFamily>
   {
   }
 
-  public void BuildFamilies(KeywordListCriteria criteria, IList<EBirdSpecies> species)
+  public void BuildFamilies(KeywordListCriteria criteria, IList<EBirdSpecies> species, ILogger logger)
   {
     if (!criteria.Depth.HasFlag(KeywordDepth.Family))
     {
-      Console.WriteLine($"\tIgnoring families: {this}");
+      logger.LogInformation($"\tIgnoring families: {this}");
       var ignoredFamily = new KeywordListFamily(EBirdService.Ignored, EBirdService.Ignored, EBirdService.Ignored) { Ignore = true };
 
-      ignoredFamily.BuildGenera(criteria, species);
+      ignoredFamily.BuildGenera(criteria, species, logger);
       Items.Add(ignoredFamily);
       return;
     }
@@ -25,13 +26,13 @@ public class KeywordListOrder : KeywordListItem<KeywordListFamily>
       .GroupBy(x => new { x.FamilyCode, x.FamilyComName, x.FamilySciName })
       .ToList();
 
-    Console.WriteLine($"\tFamilies:{families.Count} for Order:{this} and Species:{species.Count}");
+    logger.LogInformation($"\tFamilies:{families.Count} for Order:{this} and Species:{species.Count}");
     foreach (var family in families)
     {
       var familyItem = new KeywordListFamily(family.Key.FamilyCode, family.Key.FamilyComName, family.Key.FamilySciName);
       var genus = familyItem.Latin.Split(' ')[0];
-      Console.WriteLine($"\t\tGenus:{genus} - {family.Key.FamilySciName}");
-      familyItem.BuildGenera(criteria, family.ToList());
+      logger.LogInformation($"\t\tGenus:{genus} - {family.Key.FamilySciName}");
+      familyItem.BuildGenera(criteria, family.ToList(), logger);
       Items.Add(familyItem);
     }
   }

@@ -6,6 +6,7 @@ using BirdNames.Core.Models;
 using BirdNames.Core.Settings;
 using BirdNames.Dal.Interfaces;
 using FluentValidation;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 // ReSharper disable ConvertToLocalFunction
@@ -17,6 +18,7 @@ public class EBirdService : IEBirdService
   public const string Ignored = "Ignored";
   private readonly string _baseUrl;
 
+  private readonly ILogger<EBirdService> _logger;
   private readonly IRepository<EBirdMajorRegion> _majorRegionRepository;
   private readonly IRepository<EBirdCountry> _countryRepository;
   private readonly IRepository<EBirdSubRegion1> _subRegion1Repository;
@@ -27,6 +29,7 @@ public class EBirdService : IEBirdService
   private readonly HttpClient?  _client;
 
   public EBirdService(
+    ILogger<EBirdService> logger,
     IRepository<EBirdMajorRegion> majorRegionRepository,
     IRepository<EBirdCountry> countryRepository,
     IRepository<EBirdSubRegion1> subRegion1Repository,
@@ -35,6 +38,7 @@ public class EBirdService : IEBirdService
     IValidator<EBirdSpecies> speciesValidator,
     IOptions<BirdNamesCoreSettings> settings)
   {
+    _logger = logger;
     _majorRegionRepository = majorRegionRepository;
     _countryRepository = countryRepository;
     _subRegion1Repository = subRegion1Repository;
@@ -49,9 +53,9 @@ public class EBirdService : IEBirdService
       _client = new HttpClient() { BaseAddress = new Uri(_baseUrl, UriKind.Absolute) };
       _client.DefaultRequestHeaders.Add(settings.Value.EbirdApiKeyName, settings.Value.EbirdApiKeyValue);
     }
-    catch
+    catch(Exception e)
     {
-      Console.WriteLine($"ERROR: Failed to construct:{nameof(EBirdService)} from settings");
+      _logger.LogError(e, $"ERROR: Failed to construct:{nameof(EBirdService)} from settings");
       _client = null;
     }
   }
@@ -67,7 +71,7 @@ public class EBirdService : IEBirdService
     var exist = (EBirdCountry country) =>
              _subRegion1Repository.AsQueryable().Any(x => x.Country == country.Code);
 
-    await countries.ProcessInParallel(refresh, handleItem, exist, token);
+    await countries.ProcessInParallel(refresh, handleItem, exist, token, _logger);
   }
   public async Task ProcessSubRegion2(bool refresh, CancellationToken token = default)
   {
@@ -82,14 +86,14 @@ public class EBirdService : IEBirdService
     var exist = (EBirdSubRegion1 subRegion1) =>
              _subRegion2Repository.AsQueryable().Any(x => x.SubRegion1 == subRegion1.Code);
 
-    await subRegions1.ProcessInParallel(refresh, handleItem, exist, token);
+    await subRegions1.ProcessInParallel(refresh, handleItem, exist, token, _logger);
   }
   public async Task ProcessMajorRegions(bool refresh, CancellationToken token = default)
   {
     var majorRegions = _getMajorRegions();
 
     await _majorRegionRepository.ClearCollectionAsync();
-    Console.WriteLine($"Deleted all major regions");
+    _logger.LogInformation($"Deleted all major regions");
 
     var handleItem = async (EBirdMajorRegion majorRegion) =>
     {
@@ -97,12 +101,12 @@ public class EBirdService : IEBirdService
       majorRegion.Countries = countries.Select(c => c.Code).ToList();
 
       await _majorRegionRepository.InsertOneAsync(majorRegion);
-      Console.WriteLine($"Inserted MajorRegion:{majorRegion.Code}|{majorRegion.Name}.");
+      _logger.LogInformation($"Inserted MajorRegion:{majorRegion.Code}|{majorRegion.Name}.");
     };
     var exist = (EBirdMajorRegion majorRegion) =>
       _majorRegionRepository.AsQueryable().Any(x => x.Code == majorRegion.Code);
 
-    await majorRegions.ProcessInParallel(refresh, handleItem, exist, token);
+    await majorRegions.ProcessInParallel(refresh, handleItem, exist, token, _logger);
   }
   public async Task ProcessSubRegion1Species(bool refresh, CancellationToken token = default)
   {
@@ -123,11 +127,11 @@ public class EBirdService : IEBirdService
         subRegion1Doc.SpeciesCodes = speciesCodes;
 
         await _subRegion1Repository.ReplaceOneAsync(subRegion1Doc);
-        Console.WriteLine($"Updated species for {subRegion1} and {speciesCodes.Count} species");
+        _logger.LogInformation($"Updated species for {subRegion1} and {speciesCodes.Count} species");
       }
       catch (Exception e)
       {
-        Console.WriteLine($"Failed to process species for {subRegion1}.  {e.Message}");
+        _logger.LogError(e, $"Failed to process species for {subRegion1}.  {e.Message}");
       }
     };
 
@@ -137,7 +141,7 @@ public class EBirdService : IEBirdService
         // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
         .Any(x => x.Code == subRegion1 && x.SpeciesCodes != null && x.SpeciesCodes.Count > 0);
 
-    await subRegions1.ProcessInParallel(refresh, handleItem, exist, token);
+    await subRegions1.ProcessInParallel(refresh, handleItem, exist, token, _logger);
   }
   public async Task ProcessSubRegion1SpeciesInfo(bool refresh, CancellationToken token = default)
   {
@@ -147,7 +151,7 @@ public class EBirdService : IEBirdService
     const int batchSize = 10;
     var batches = _getBatchOf(uniqueSpeciesCodes.ToList(), batchSize);
 
-    await batches.ProcessInParallel(refresh, _handleSpeciesCodesBatch, _speciesExist, token);
+    await batches.ProcessInParallel(refresh, _handleSpeciesCodesBatch, _speciesExist, token, _logger);
   }
   public async Task VerifyAllUniqueSpecies(bool refresh, CancellationToken token = default)
   {
@@ -171,29 +175,29 @@ public class EBirdService : IEBirdService
     const int batchSize = 10;
     var batches = _getBatchOf(speciesNotInDb.ToList(), batchSize);
 
-    Console.WriteLine($"Found {speciesNotInDb.Count} species not in the database.  Refreshing {refresh}");
+    _logger.LogInformation($"Found {speciesNotInDb.Count} species not in the database.  Refreshing {refresh}");
     if (!refresh)
     {
       foreach (var batch in batches)
-        Console.WriteLine($"Species not in database: {string.Join(',', batch)}");
+        _logger.LogWarning($"Species not in database: {string.Join(',', batch)}");
       return;
     }
 
-    await batches.ProcessInParallel(refresh, _handleSpeciesCodesBatch, _speciesExist, token);
+    await batches.ProcessInParallel(refresh, _handleSpeciesCodesBatch, _speciesExist, token, _logger);
   }
   public async Task<MemoryStream?> DownloadKeywords(KeywordListCriteria criteria, CancellationToken token = default)
   {
     var keywordSource = _buildKeywordSource(criteria);
     if (keywordSource == null)
     {
-      Console.WriteLine($"No keywords found for {criteria}");
+      _logger.LogWarning($"No keywords found for {criteria}");
       return null;
     }
 
-    Console.WriteLine($"Found {keywordSource.Orders.Count} orders");
-    Console.WriteLine($"Found {keywordSource.Orders.Sum(x => x.Items.Count)} families");
-    Console.WriteLine($"Found {keywordSource.Orders.Sum(x => x.Items.Sum(y => y.Items.Count))} genera");
-    Console.WriteLine($"Found {keywordSource.Orders.Sum(x => x.Items.Sum(y => y.Items.Sum(z => z.Items.Count)))} species");
+    _logger.LogInformation($"Found {keywordSource.Orders.Count} orders");
+    _logger.LogInformation($"Found {keywordSource.Orders.Sum(x => x.Items.Count)} families");
+    _logger.LogInformation($"Found {keywordSource.Orders.Sum(x => x.Items.Sum(y => y.Items.Count))} genera");
+    _logger.LogInformation($"Found {keywordSource.Orders.Sum(x => x.Items.Sum(y => y.Items.Sum(z => z.Items.Count)))} species");
 
     var memoryStream = new MemoryStream();
     await using var writer = new StreamWriter(memoryStream, leaveOpen:true);
@@ -211,7 +215,7 @@ public class EBirdService : IEBirdService
       .Distinct()
       .ToList();
 
-    Console.WriteLine($"Found {speciesCount} species with {speciesSciNames.Count} unique scientific names");
+    _logger.LogInformation($"Found {speciesCount} species with {speciesSciNames.Count} unique scientific names");
 
     Dictionary<int, int> spaceCountDictionary = new();
     foreach (var speciesSciName in speciesSciNames)
@@ -225,7 +229,7 @@ public class EBirdService : IEBirdService
     }
 
     foreach (var (key, value) in spaceCountDictionary)
-      Console.WriteLine($"Space count: {key} has {value} species");
+      _logger.LogInformation($"Space count: {key} has {value} species");
 
     return Task.CompletedTask;
   }
@@ -259,13 +263,13 @@ public class EBirdService : IEBirdService
 
     var result = await _subRegion1Repository.DeleteManyAsync(x => x.Country == countryCode);
     if (result.DeletedCount > 0)
-      Console.WriteLine($"Deleted {result.DeletedCount} subregions1 for {countryCode}");
+      _logger.LogInformation($"Deleted {result.DeletedCount} subregions1 for {countryCode}");
 
     if (sub1.Count == 0)
       return;
 
     await _subRegion1Repository.InsertManyAsync(sub1);
-    Console.WriteLine($"Inserted {sub1.Count} subregions1 for {countryCode}");
+    _logger.LogInformation($"Inserted {sub1.Count} subregions1 for {countryCode}");
   }
   private async Task _getAndPersistSubRegions2(string subRegion1, string country, CancellationToken token)
   {
@@ -277,13 +281,13 @@ public class EBirdService : IEBirdService
 
     var result = await _subRegion2Repository.DeleteManyAsync(x => x.Country == subRegion1);
     if (result.DeletedCount > 0)
-      Console.WriteLine($"Deleted {result.DeletedCount} subregions2 for {country}:{subRegion1}");
+      _logger.LogInformation($"Deleted {result.DeletedCount} subregions2 for {country}:{subRegion1}");
 
     if (sub2.Count == 0)
       return;
 
     await _subRegion2Repository.InsertManyAsync(sub2);
-    Console.WriteLine($"Inserted {sub2.Count} subregions2 for {country}:{subRegion1}");
+    _logger.LogInformation($"Inserted {sub2.Count} subregions2 for {country}:{subRegion1}");
   }
   private static List<EBirdMajorRegion> _getMajorRegions()
   {
@@ -322,7 +326,7 @@ public class EBirdService : IEBirdService
     if (!response.IsSuccessStatusCode)
       throw new Exception($"Error getting {regionType} for {filterCode}");
 
-    Console.WriteLine($"Loading {regionType} for {filterCode}");
+    _logger.LogDebug($"Loading {regionType} for {filterCode}");
     var json = await response.Content.ReadAsStringAsync(token);
 
     return JsonSerializer.Deserialize<List<CodeAndName>>(json) ??
@@ -335,7 +339,7 @@ public class EBirdService : IEBirdService
     var response = await _client.GetAsync(path, token);
     response.EnsureSuccessStatusCode();
 
-    Console.WriteLine($"Loading species for {regionCode}");
+    _logger.LogInformation($"Loading species for {regionCode}");
     var json = await response.Content.ReadAsStringAsync(token);
 
     return JsonSerializer.Deserialize<List<string>>(json) ??
@@ -349,7 +353,7 @@ public class EBirdService : IEBirdService
     var response = await _client.GetAsync(path, token);
     response.EnsureSuccessStatusCode();
 
-    Console.WriteLine($"Loading species for {speciesCodesString}");
+    _logger.LogDebug($"Loading species for {speciesCodesString}");
     var json = await response.Content.ReadAsStringAsync(token);
 
     return JsonSerializer.Deserialize<IList<EBirdSpecies>>(json) ??
@@ -364,7 +368,7 @@ public class EBirdService : IEBirdService
     foreach (var subRegion1 in subRegions1)
       uniqueSpeciesCodes.UnionWith(subRegion1.SpeciesCodes);
 
-    Console.WriteLine($"Found {uniqueSpeciesCodes.Count} unique species codes");
+    _logger.LogInformation($"Found {uniqueSpeciesCodes.Count} unique species codes");
     return uniqueSpeciesCodes;
   }
   private async Task _handleSpeciesCodesBatch(IList<string> speciesCodesBatch)
@@ -441,12 +445,12 @@ public class EBirdService : IEBirdService
 
     var species = new ConcurrentBag<EBirdSpecies>(speciesQuery);
 
-    Console.WriteLine($"Found {species.Count} species for criteria {criteria}");
+    _logger.LogInformation($"Found {species.Count} species for criteria {criteria}");
     if (species.Count == 0)
       return null;
 
     var source = new KeywordListSource(criteria, DateTime.Now);
-    source.BuildOrders(criteria, species.ToList());
+    source.BuildOrders(criteria, species.ToList(), _logger);
 
     return source;
   }

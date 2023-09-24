@@ -1,4 +1,6 @@
-﻿namespace BirdNames.Core.Models;
+﻿using Microsoft.Extensions.Logging;
+
+namespace BirdNames.Core.Models;
 
 public class KeywordListGenus : KeywordListItem<EBirdSpecies>
 {
@@ -6,9 +8,9 @@ public class KeywordListGenus : KeywordListItem<EBirdSpecies>
   {
   }
 
-  public void BuildSpecies(KeywordListCriteria criteria, IList<EBirdSpecies> species)
+  public void BuildSpecies(KeywordListCriteria criteria, IList<EBirdSpecies> species, ILogger logger)
   {
-    Console.WriteLine($"\t\t\tSpecies:{species.Count} species for Genus:{this}");
+    logger.LogInformation($"\t\t\tSpecies:{species.Count} species for Genus:{this}");
     Items.AddRange(species);
   }
 

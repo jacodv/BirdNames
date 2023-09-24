@@ -10,6 +10,7 @@ using BirdNames.Core.StartUp;
 using BirdNames.Core.Xml;
 using BirdNames.Tool.Helpers;
 using FluentValidation;
+using Serilog;
 
 namespace BirdNames.Tool;
 
@@ -17,6 +18,8 @@ internal class Program
 {
   public static IConfiguration? Configuration { get; set; }
   public static IServiceProvider? ServiceProvider { get; set; }
+  public static Serilog.Core.Logger? Logger { get; set; }
+
   public static string BasePath { get; set; } = string.Empty;
   public const string SettingsFileName = "appsettings.json";
 
@@ -27,7 +30,7 @@ internal class Program
     BasePath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
     if (!Directory.Exists(BasePath))
     {
-      Console.WriteLine($"BasePath: {BasePath} does not exist.");
+      Console.WriteLine($"ERROR: BasePath: {BasePath} does not exist.");
       return 1;
     }
 
@@ -54,11 +57,22 @@ internal class Program
 
   private static IServiceCollection _init()
   {
+    var environmentName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+    if(string.IsNullOrEmpty(environmentName))
+      environmentName="Development";
+
     Configuration = new ConfigurationBuilder()
       .SetBasePath(BasePath!)
       .AddJsonFile(SettingsFileName, true, true)
+      .AddJsonFile($"appsettings.{environmentName}.json", true, true)
       .AddEnvironmentVariables()
       .Build();
+
+    Logger = new LoggerConfiguration()
+      .ReadFrom.Configuration(Configuration)
+      .CreateLogger();
+
+    Logger.Information("Created logger: {environmentName}",environmentName);
 
     var services = new ServiceCollection()
       .Configure<DatabaseSettings>(settings =>
@@ -70,6 +84,8 @@ internal class Program
         Configuration.GetSection(nameof(BirdNamesCoreSettings)).Bind(settings);
       })
       .AddOptions();
+
+    services.AddLogging(builder => builder.AddSerilog(Logger));
 
     services.AddValidatorsFromAssemblyContaining<ModelVersionBaseValidator<BirdNamesOrder>>();
 
@@ -83,8 +99,7 @@ internal class Program
     command.SetHandler(async (sourceFile) =>
     {
       await BirdNamesFx.ProcessXml(sourceFile, ServiceProvider!);
-      Console.WriteLine("\nDone");
-      Console.ReadKey();
+      Logger!.Information("Done");
     },sourceFileOption);
 
     return command;
@@ -102,7 +117,7 @@ internal class Program
       }
       catch (Exception e)
       {
-        Console.WriteLine($"Failed to process the Countries CSV.  {e.Message}.\n\n{e}");
+        Logger!.Error(e, $"Failed to process the Countries CSV.  {e.Message}");
       }
     }, sourceFileOption);
 
@@ -122,7 +137,7 @@ internal class Program
       }
       catch (Exception e)
       {
-        Console.WriteLine($"Failed to process the sub regions2 for country.  {e.Message}.\n\n{e}");
+        Logger!.Error(e, $"Failed to process the sub regions2 for country.  {e.Message}.");
       }
     },refreshOption);
 
@@ -143,7 +158,7 @@ internal class Program
       }
       catch (Exception e)
       {
-        Console.WriteLine($"Failed to process the sub regions2 for country.  {e.Message}.\n\n{e}");
+        Logger!.Error(e, $"Failed to process the sub regions2 for country.  {e.Message}.");
       }
     }, refreshOption);
 
@@ -163,7 +178,7 @@ internal class Program
       }
       catch (Exception e)
       {
-        Console.WriteLine($"Failed to process the major regions.  {e.Message}.\n\n{e}");
+        Logger!.Error(e, $"Failed to process the major regions.  {e.Message}");
       }
     }, refreshOption);
 
@@ -182,7 +197,7 @@ internal class Program
       }
       catch (Exception e)
       {
-        Console.WriteLine($"Failed to process the sub region 1 species codes.  {e.Message}.\n\n{e}");
+        Logger!.Error(e, $"Failed to process the sub region 1 species codes.  {e.Message}");
       }
     }, refreshOption);
 
@@ -201,7 +216,7 @@ internal class Program
       }
       catch (Exception e)
       {
-        Console.WriteLine($"Failed to process the unique species.  {e.Message}.\n\n{e}");
+        Logger!.Error(e, $"Failed to process the unique species.  {e.Message}");
       }
     }, refreshOption);
 
@@ -220,7 +235,7 @@ internal class Program
       }
       catch (Exception e)
       {
-        Console.WriteLine($"Failed to verify unique species.  {e.Message}.\n\n{e}");
+        Logger!.Error(e, $"Failed to verify unique species.  {e.Message}");
       }
     }, refreshOption);
 
@@ -263,7 +278,7 @@ internal class Program
       }
       catch (Exception e)
       {
-        Console.WriteLine($"Failed to download keywords.  {e.Message}.\n\n{e}");
+        Logger!.Error(e, $"Failed to download keywords.  {e.Message}");
       }
     }, pathOption, majorOption, countryOption, subRegion1Option, depthOption, headerSynonymsOption);
 
@@ -284,7 +299,7 @@ internal class Program
       }
       catch (Exception e)
       {
-        Console.WriteLine($"Temp work failed.  {e.Message}.\n\n{e}");
+        Logger!.Error(e, $"Temp work failed.  {e.Message}");
       }
     });
 

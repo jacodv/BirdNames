@@ -1,5 +1,6 @@
 ﻿using BirdNames.Core.Enums;
 using BirdNames.Core.Services;
+using Microsoft.Extensions.Logging;
 
 namespace BirdNames.Core.Models;
 
@@ -24,14 +25,14 @@ public class KeywordListSource
   }
   public List<KeywordListOrder> Orders { get; set; } = new();
 
-  public void BuildOrders(KeywordListCriteria criteria, IList<EBirdSpecies> species)
+  public void BuildOrders(KeywordListCriteria criteria, IList<EBirdSpecies> species, ILogger logger)
   {
     if (!criteria.Depth.HasFlag(KeywordDepth.Order))
     {
-      Console.WriteLine($"Ignoring orders");
+      logger.LogInformation($"Ignoring orders");
       var ignoredOrder = new KeywordListOrder(EBirdService.Ignored, EBirdService.Ignored) { Ignore = true };
 
-      ignoredOrder.BuildFamilies(criteria, species);
+      ignoredOrder.BuildFamilies(criteria, species, logger);
       Orders.Add(ignoredOrder);
       return;
     }
@@ -41,11 +42,11 @@ public class KeywordListSource
       .Select(x => new KeywordListOrder(x.Key, x.First().Order))
       .ToList();
 
-    Console.WriteLine($"Orders:{orders.Count} from Species:{species.Count} for {criteria}");
+    logger.LogInformation($"Orders:{orders.Count} from Species:{species.Count} for {criteria}");
     foreach (var order in orders)
     {
       var orderItem = new KeywordListOrder(order.Code, order.Name);
-      orderItem.BuildFamilies(criteria, species.Where(x => x.Order == order.Code).ToList());
+      orderItem.BuildFamilies(criteria, species.Where(x => x.Order == order.Code).ToList(), logger);
       Orders.Add(orderItem);
     }
   }

@@ -14,8 +14,8 @@ public static class BirdNamesFx
 
   public static async Task ProcessXml(Stream xmlSource, IServiceProvider serviceProvider)
   {
-    await using var xmlProcessor = new BirdNamesXmlProcessor(xmlSource);
-    await xmlProcessor.ProcessXml(serviceProvider);
+    await using var xmlProcessor = serviceProvider.GetService<IBirdNamesXmlProcessorService>();
+    await xmlProcessor!.ProcessXml(xmlSource);
   }
 
   public static async Task ProcessCountriesCsv(string path, IServiceProvider serviceProvider)
