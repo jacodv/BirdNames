@@ -23,23 +23,84 @@
   </div>
 }
 
-
 <div class="row">
   <hr />
   <div class="col-md-12">
     <RadzenLabel Text="IOC World Bird List (Xml):" />
     @if (IsLoggedIn)
     {
-      <InputFile OnChange="OnFileUploadChanged"></InputFile>
+      <InputFile OnChange="OnXmlFileUploadChanged"></InputFile>
     }
   </div>
 </div>
 <div class="row">
   <div class="col-md-12">
-    <RadzenButton ButtonStyle="ButtonStyle.Primary" Text="Upload" Click="@(async ()=>await ProcessUploadedXml())" Disabled="@(!AllowXmlUpload && !IsLoggedIn)" />
+    <RadzenButton ButtonStyle="ButtonStyle.Primary" Text="Upload" Click="@(async ()=>await ProcessUploadedXml())" Disabled="@(!IsLoggedIn)" />
   </div>
 </div>
 
-@code {
+<div class="row">
+  <hr />
+  <div class="col-md-12">
+    <RadzenLabel Text="Country List (Csv):" />
+    @if (IsLoggedIn)
+    {
+      <InputFile OnChange="OnCsvFileUploadChanged"></InputFile>
+    }
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-12">
+    <RadzenButton ButtonStyle="ButtonStyle.Primary" Text="Upload" Click="@(async ()=>await ProcessUploadedCsv())" Disabled="@(!IsLoggedIn)" />
+  </div>
+</div>
 
-}
+<div class="row">
+  <hr />
+  <div class="col-md-4">
+    <RadzenFieldset Text="Process Major Regions">
+      <RadzenButton Click="@(async() => await ProcessMajorRegions(RefreshMajorRegions))">Process</RadzenButton>
+      <RadzenCheckBox @bind-Value=@RefreshMajorRegions></RadzenCheckBox>
+      <RadzenText TextStyle="TextStyle.Caption">Refresh</RadzenText>
+    </RadzenFieldset>
+  </div>
+  <div class="col-md-4">
+    <RadzenFieldset Text="Process Sub-national1">
+      <RadzenButton Click="@(async() => await ProcessSubRegions(true, RefreshSubRegion1))">Process</RadzenButton>
+      <RadzenCheckBox @bind-Value=@RefreshSubRegion1></RadzenCheckBox>
+      <RadzenText TextStyle="TextStyle.Caption">Refresh</RadzenText>
+    </RadzenFieldset>
+  </div>
+  <div class="col-md-4">
+    <RadzenFieldset Text="Process Sub-national2">
+      <RadzenButton Click="@(async() => await ProcessSubRegions(false, RefreshSubRegion2))">Process</RadzenButton>
+      <RadzenCheckBox @bind-Value=@RefreshSubRegion2></RadzenCheckBox>
+      <RadzenText TextStyle="TextStyle.Caption">Refresh</RadzenText>
+    </RadzenFieldset>
+  </div>
+</div>
+
+<div class="row">
+  <hr />
+  <div class="col-md-4">
+    <RadzenFieldset Text="Process Sub-national1 Species">
+      <RadzenButton Click="@(async() => await ProcessSubRegions1Species(RefreshSubRegion1Species))">Process</RadzenButton>
+      <RadzenCheckBox @bind-Value=@RefreshSubRegion1Species></RadzenCheckBox>
+      <RadzenText TextStyle="TextStyle.Caption">Refresh</RadzenText>
+    </RadzenFieldset>
+  </div>
+  <div class="col-md-4">
+    <RadzenFieldset Text="Process Unique Species">
+      <RadzenButton Click="@(async() => await ProcessUniqueSpeciesInfo(RefreshUniqSpecies))">Process</RadzenButton>
+      <RadzenCheckBox @bind-Value=@RefreshUniqSpecies></RadzenCheckBox>
+      <RadzenText TextStyle="TextStyle.Caption">Refresh</RadzenText>
+    </RadzenFieldset>
+  </div>
+  <div class="col-md-4">
+    <RadzenFieldset Text="Verify Unique Species">
+      <RadzenButton Click="@(async() => await VerifyAllUniqueSpecies(RefreshAllSpeciesVerify))">Process</RadzenButton>
+      <RadzenCheckBox @bind-Value=@RefreshAllSpeciesVerify></RadzenCheckBox>
+      <RadzenText TextStyle="TextStyle.Caption">Refresh</RadzenText>
+    </RadzenFieldset>
+  </div>
+</div>
