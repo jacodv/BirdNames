@@ -8,6 +8,7 @@
 
 @inject IOptions<BirdNamesCoreSettings> CoreSettings;
 @inject ISettingsService SettingsService
+@inject NotificationService NotificationService
 
 <h3>BirdNames Data Administration</h3>
 
@@ -45,7 +46,7 @@
 </div>
 <div class="row">
   <div class="col-md-4">
-    <RadzenButton ButtonStyle="ButtonStyle.Primary" Text="Upload" Click=@_uploadXmlFile Disabled="@(!_allowXmlUpload)" />
+    <RadzenButton ButtonStyle="ButtonStyle.Primary" Text="Upload" Click=@_uploadXmlFile Disabled="@(!_allowXmlUpload && !_isLoggedIn)" />
   </div>
   <div class="col-md-8">
     <pre style="color:red">@_xmlFileError</pre>
@@ -57,8 +58,6 @@
   string _adminPassword = string.Empty;
   string? _loginError;
 
-  string? _xmlFileName;
-  long? _xmlFileSize;
   MemoryStream? _xmlFileData;
   string? _xmlFileError;
   bool _allowXmlUpload = false;
@@ -76,19 +75,21 @@
     }
     else
     {
+      NotificationService.Notify(NotificationSeverity.Error, "Login Error", "Invalid password");
       _loginError = "Invalid password";
     }
   }
-
   private async Task _uploadXmlFile()
   {
     try
     {
       _xmlFileData!.Position = 0;
       await BirdNamesFx.ProcessXml(_xmlFileData, Program.ServiceProvider!);
+      NotificationService.Notify(NotificationSeverity.Success, "Process Complete", "IOC World Bird List uploaded and processed");
     }
     catch (Exception e)
     {
+      NotificationService.Notify(NotificationSeverity.Error, "Process Error", e.Message);
       _xmlFileError = e.Message;
     }
   }
@@ -113,9 +114,6 @@
         return;
       }
 
-      _xmlFileName = args.File.Name;
-      _xmlFileSize = args.File.Size;
-
       var buffer = new byte[args.File.Size];
       _ = await args.File.OpenReadStream(int.MaxValue).ReadAsync(buffer).ConfigureAwait(false);
 
@@ -124,10 +122,12 @@
       await InvokeAsync(StateHasChanged);
 
       await Task.Yield();
+      NotificationService.Notify(NotificationSeverity.Info, "File Uploaded", $"File: {args.File.Name}\nSize: {args.File.Size}\nType: {args.File.ContentType}");
     }
     catch (Exception e)
     {
       _allowXmlUpload = false;
+NotificationService.Notify(NotificationSeverity.Error, "Upload Error", e.Message);
       _xmlFileError = e.Message;
     }
   }
