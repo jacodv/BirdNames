@@ -17,8 +17,8 @@
 <PageTitle>Download Keyword List</PageTitle>
 
 <h3>Configure Keyword List</h3>
-<hr/>
 <div class="row">
+  <hr/>
   <div class="col-md-6">
     <RadzenLabel Text="Download File:" Component="fileNameTextBox" Style="margin-right: 8px; vertical-align: middle;font-style: italic; font-weight:bold" />
     <RadzenTextBox Name="fileNameTextBox" Value=@_downloadFileName
@@ -30,6 +30,7 @@
   </div>
 </div>
 <div class="row">
+  <hr/>
   <div class="col-md-6">
     <RadzenLabel Text="Choose the depth" Component="depthCheckList" Style="margin-right: 8px; vertical-align: middle;font-style: italic; font-weight:bold" />
     <RadzenCheckBoxList Name="depthCheckList"
@@ -53,6 +54,7 @@
   </div>
 </div>
 <div class="row">
+  <hr/>
   <div class="col-md-12">
     <RadzenLabel Text="Choose the Region Type" Component="regionTypeOptions" Style="margin-right: 8px; vertical-align: middle;font-style: italic; font-weight:bold" />
     <RadzenRadioButtonList id="regionTypeOptions"
@@ -68,10 +70,10 @@
   </div>
 </div>
 <div class="row">
-  <div class="col-md-4">
+  <div class="col-md-6">
     <RadzenAutoComplete id="regionAutoCompleted"
-    @ref="_autoCompleteElement"
-    @bind-SearchText=@_filterText
+                        @ref="_autoCompleteElement"
+                        @bind-SearchText=@_filterText
                         FilterDelay="500"
                         TextProperty="Name"
                         Data=@_autoCompleteSource
@@ -80,21 +82,25 @@
                         LoadData=@_loadFilterData
                         Style="width: 100%" />
   </div>
-  <div class="col-md-4">
+  <div class="col-md-6">
     <div style="color:blue">@_regionChildren [@_actionsText]</div>
     <div></div>
     <div style="color:red">@_error</div>
   </div>
-  <div class="col-md-4">
-    <RadzenButton Text="Preview" Click=@_preview Disabled="@_previewDisabled"></RadzenButton>
-    <RadzenButton Text="Download" Click=@_download Disabled="@_downloadDisabled"></RadzenButton>
-  </div>
 </div>
 <div class="row">
   <div class="col-md-12">
-    <hr />
-    <RadzenLabel Text="Preview" Style="margin-right: 8px; vertical-align: middle;font-style: italic; font-weight:bold" />
-    <hr />
+    <RadzenButton Text="Preview" Click=@_preview Disabled="@_previewDisabled"></RadzenButton>
+    <RadzenButton Text="Download" Click=@_download Disabled="@_downloadDisabled"></RadzenButton>
+    <br />
+    <br />
+  </div>
+</div>
+<div class="row">
+  <hr/>
+  <div class="col-md-12">
+    <RadzenLabel Text="Preview" Style="margin-right: 8px; vertical-align: middle;font-style: italic; font-weight:bold"/>
+    <hr/>
     <pre id="preview">@_previewText</pre>
   </div>
 </div>

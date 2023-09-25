@@ -1,7 +1,6 @@
 ﻿@page "/admin"
 @inherits AdminPageBase
 
-
 <h3>BirdNames Data Administration</h3>
 
 <div class="row">
@@ -17,8 +16,8 @@
     <hr />
     <div class="col-md-12">
       <RadzenLabel Component="adminPassword">Admin Password: <b><i>{Enter} or {Tab} to continue</i></b></RadzenLabel>
-      <RadzenPassword @bind-Value=@AdminPassword Style="width:100%" Name="adminPassword" />
-      <RadzenButton ButtonStyle="ButtonStyle.Primary" Text="Login" Click=@Login />
+      <RadzenPassword @bind-Value=@AdminPassword Style="width:100%" Name="adminPassword" @onkeyup="@(_loginKeyPress)" />
+      <RadzenButton id="loginButton" Name="loginButton" Text="Login" Click=@Login  />
     </div>
   </div>
 }
@@ -35,7 +34,7 @@
 </div>
 <div class="row">
   <div class="col-md-12">
-    <RadzenButton ButtonStyle="ButtonStyle.Primary" Text="Upload" Click="@(async ()=>await ProcessUploadedXml())" Disabled="@(!IsLoggedIn)" />
+    <RadzenButton ButtonStyle="ButtonStyle.Secondary" Text="Upload" Click="@(async ()=>await ProcessUploadedXml())" Disabled="@(!IsLoggedIn)" />
   </div>
 </div>
 
@@ -51,7 +50,7 @@
 </div>
 <div class="row">
   <div class="col-md-12">
-    <RadzenButton ButtonStyle="ButtonStyle.Primary" Text="Upload" Click="@(async ()=>await ProcessUploadedCsv())" Disabled="@(!IsLoggedIn)" />
+    <RadzenButton ButtonStyle="ButtonStyle.Secondary" Text="Upload" Click="@(async ()=>await ProcessUploadedCsv())" Disabled="@(!IsLoggedIn)" />
   </div>
 </div>
 
@@ -59,21 +58,21 @@
   <hr />
   <div class="col-md-4">
     <RadzenFieldset Text="Process Major Regions">
-      <RadzenButton Click="@(async() => await ProcessMajorRegions(RefreshMajorRegions))">Process</RadzenButton>
+      <RadzenButton Click="@(async() => await ProcessMajorRegions(RefreshMajorRegions))" Disabled="@(!IsLoggedIn)" ButtonStyle="ButtonStyle.Secondary">Process</RadzenButton>
       <RadzenCheckBox @bind-Value=@RefreshMajorRegions></RadzenCheckBox>
       <RadzenText TextStyle="TextStyle.Caption">Refresh</RadzenText>
     </RadzenFieldset>
   </div>
   <div class="col-md-4">
     <RadzenFieldset Text="Process Sub-national1">
-      <RadzenButton Click="@(async() => await ProcessSubRegions(true, RefreshSubRegion1))">Process</RadzenButton>
+      <RadzenButton Click="@(async() => await ProcessSubRegions(true, RefreshSubRegion1))" Disabled="@(!IsLoggedIn)" ButtonStyle="ButtonStyle.Secondary">Process</RadzenButton>
       <RadzenCheckBox @bind-Value=@RefreshSubRegion1></RadzenCheckBox>
       <RadzenText TextStyle="TextStyle.Caption">Refresh</RadzenText>
     </RadzenFieldset>
   </div>
   <div class="col-md-4">
     <RadzenFieldset Text="Process Sub-national2">
-      <RadzenButton Click="@(async() => await ProcessSubRegions(false, RefreshSubRegion2))">Process</RadzenButton>
+      <RadzenButton Click="@(async() => await ProcessSubRegions(false, RefreshSubRegion2))" Disabled="@(!IsLoggedIn)" ButtonStyle="ButtonStyle.Secondary">Process</RadzenButton>
       <RadzenCheckBox @bind-Value=@RefreshSubRegion2></RadzenCheckBox>
       <RadzenText TextStyle="TextStyle.Caption">Refresh</RadzenText>
     </RadzenFieldset>
@@ -84,23 +83,35 @@
   <hr />
   <div class="col-md-4">
     <RadzenFieldset Text="Process Sub-national1 Species">
-      <RadzenButton Click="@(async() => await ProcessSubRegions1Species(RefreshSubRegion1Species))">Process</RadzenButton>
+      <RadzenButton Click="@(async() => await ProcessSubRegions1Species(RefreshSubRegion1Species))" Disabled="@(!IsLoggedIn)" ButtonStyle="ButtonStyle.Secondary">Process</RadzenButton>
       <RadzenCheckBox @bind-Value=@RefreshSubRegion1Species></RadzenCheckBox>
       <RadzenText TextStyle="TextStyle.Caption">Refresh</RadzenText>
     </RadzenFieldset>
   </div>
   <div class="col-md-4">
     <RadzenFieldset Text="Process Unique Species">
-      <RadzenButton Click="@(async() => await ProcessUniqueSpeciesInfo(RefreshUniqSpecies))">Process</RadzenButton>
+      <RadzenButton Click="@(async() => await ProcessUniqueSpeciesInfo(RefreshUniqSpecies))" Disabled="@(!IsLoggedIn)" ButtonStyle="ButtonStyle.Secondary">Process</RadzenButton>
       <RadzenCheckBox @bind-Value=@RefreshUniqSpecies></RadzenCheckBox>
       <RadzenText TextStyle="TextStyle.Caption">Refresh</RadzenText>
     </RadzenFieldset>
   </div>
   <div class="col-md-4">
     <RadzenFieldset Text="Verify Unique Species">
-      <RadzenButton Click="@(async() => await VerifyAllUniqueSpecies(RefreshAllSpeciesVerify))">Process</RadzenButton>
+      <RadzenButton Click="@(async() => await VerifyAllUniqueSpecies(RefreshAllSpeciesVerify))" Disabled="@(!IsLoggedIn)" ButtonStyle="ButtonStyle.Secondary">Process</RadzenButton>
       <RadzenCheckBox @bind-Value=@RefreshAllSpeciesVerify></RadzenCheckBox>
       <RadzenText TextStyle="TextStyle.Caption">Refresh</RadzenText>
     </RadzenFieldset>
   </div>
 </div>
+
+@code
+{
+  private void _loginKeyPress(KeyboardEventArgs args)
+  {
+    if (string.IsNullOrEmpty(AdminPassword))
+      return;
+
+    if (args.Key == "Enter")
+      Login();
+  }
+}
