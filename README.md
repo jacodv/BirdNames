@@ -46,10 +46,16 @@ TOBE COMPLETED
 
 ## Acknowledgements
 This project uses data from the following sources
-- EBird (https://ebird.org)
+
+### EBird (https://ebird.org)
 Major Regions, Countries, Sub-national and Species. API (https://documenter.getpostman.com/view/664302/S1ENwy59)
-- IOC World Bird List
+
+### IOC World Bird List
 This was the initial start for the project.  To process the XML from https://www.worldbirdnames.org/new/ioc-lists/master-list-2/.  Unfortunately the geographical data ended being to unstructured.  This project processes and stores the XML in MongoDB.  This can used to search and find information instead of using the available spreadsheets or XML.
+
+### IOC-Bird-List-Lightroom-Keyword-Generator
+[https://github.com/rsjaffe](https://github.com/rsjaffe) created a project that uses xslt transformation on the above mentioned XML file.  The xslt (due to the lack of definitive regions in the XML) transformed the entire 11,000+ species into the hierarchical keywordlist file.  It means that bird photographers using Adobe Lightroom Classic to catalog their photos could not have a focussed list for a specific region. https://github.com/rsjaffe/IOC-Bird-List-Lightroom-Keyword-Generator
+
 
 Links
 - Adobe Lightroom Classic
