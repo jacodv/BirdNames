@@ -49,7 +49,14 @@ Before downloading the hierarchical keywordlist file, the user must first previe
 ![Download](Screenshots/UI-Download.png)
 
 ## Admin
-The `Admin` page can only accessed if an admin password is entered correctly.
+The `Admin` page can only accessed if an admin password is entered correctly.  To show the admin page, ensure that the `appsettings.json` in the deployment/build folder has `ShowAdminMenu` as `true`.
+```{json}
+{
+  //...
+  "ShowAdminMenu": true,
+  ///...
+}
+```
 
 ### IOC Bird List (Xml) [OPTIONAL]
 The user can optionally upload and process the latest world bird names xml master list.  It can be [downloaded]() from https://www.worldbirdnames.org/new/ioc-lists/master-list-2/ or the latest from the repo in the files directory

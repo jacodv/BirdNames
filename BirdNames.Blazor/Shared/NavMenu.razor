@@ -19,16 +19,19 @@
         <span class="oi oi-list-rich" aria-hidden="true"></span> Get Keyword List
       </NavLink>
     </div>
-    <div class="nav-item px-3">
-      <NavLink class="nav-link" href="stats">
-        <span class="oi oi-plus" aria-hidden="true"></span> Statistics
-      </NavLink>
-    </div>
-    <div class="nav-item px-3">
-      <NavLink class="nav-link" href="admin">
-        <span class="oi oi-cog" aria-hidden="true"></span> Admin
-      </NavLink>
-    </div>
+    @if (Program.ShowAdminMenu)
+    {
+      <div class="nav-item px-3">
+        <NavLink class="nav-link" href="stats">
+          <span class="oi oi-plus" aria-hidden="true"></span> Statistics
+        </NavLink>
+      </div>
+      <div class="nav-item px-3">
+        <NavLink class="nav-link" href="admin">
+          <span class="oi oi-cog" aria-hidden="true"></span> Admin
+        </NavLink>
+      </div>
+    }
   </nav>
 </div>
 

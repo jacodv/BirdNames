@@ -12,6 +12,7 @@ public class Program
   public static IServiceProvider? ServiceProvider { get; set; }
   public static IConfiguration? Configuration { get; set; }
   public static Serilog.Core.Logger? Logger { get; set; }
+  public static bool ShowAdminMenu { get; set; } = false;
 
   public static void Main(string[] args)
   {
@@ -30,6 +31,7 @@ public class Program
       .CreateLogger();
 
     Logger.Information($"Created Logger: {env.EnvironmentName}");
+    ShowAdminMenu = Configuration.GetValue<bool>(nameof(ShowAdminMenu));
 
     builder.Host.UseSerilog(Logger);
 
