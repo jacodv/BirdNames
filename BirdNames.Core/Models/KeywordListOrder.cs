@@ -45,12 +45,12 @@ public class KeywordListOrder : KeywordListItem<KeywordListFamily>
       return;
     }
 
-    await writer.WriteLineAsync($"{lineTabs}{Code}");
+    await _writeLineAsync(writer, $"{lineTabs}{Code}");
     lineTabs += "\t";
     var synonym = Code.ToLower() == "struthioniformes" || Code.ToLower() == "tinamiformes" ?
       "Palaeognathae" :
       "Neognathae";
-    await writer.WriteLineAsync($"{lineTabs}{{{synonym}}}");
+    await _writeLineAsync(writer, $"{lineTabs}{{{synonym}}}");
     foreach (var keywordListFamily in Items)
       await keywordListFamily.GetFileContent(writer, lineTabs);
   }

@@ -23,7 +23,7 @@ public class KeywordListGenus : KeywordListItem<EBirdSpecies>
       return;
     }
 
-    await writer.WriteLineAsync($"{lineTabs}{Name}");
+    await _writeLineAsync(writer, $"{lineTabs}{Name}");
     lineTabs += "\t";
     foreach (var species in Items)
       await species.GetFileContent(writer, lineTabs, false);

@@ -46,9 +46,9 @@ public class KeywordListFamily : KeywordListItem<KeywordListGenus>
       return;
     }
 
-    await writer.WriteLineAsync($"{lineTabs}{Name}");
+    await _writeLineAsync(writer, $"{lineTabs}{Name}");
     lineTabs += "\t";
-    await writer.WriteLineAsync($"{lineTabs}{{{Latin}}}");
+    await _writeLineAsync(writer, $"{lineTabs}{{{Latin}}}");
     foreach (var keywordListGenus in Items)
       await keywordListGenus.GetFileContent(writer, lineTabs);
   }

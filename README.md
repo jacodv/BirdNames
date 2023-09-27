@@ -1,5 +1,7 @@
 # BirdNames Hierarchical KeywordList Generator
-This project was developed to create hierarchical keyword lists for Adobe Lightroom Classic.  The project 
+This project was developed to create hierarchical keyword lists for Adobe Lightroom Classic.  See sample below...
+
+![Example](Screenshots/KeywordListSample.png)
 
 ## Repository Structure
 
@@ -36,8 +38,6 @@ dotnet tool install --global --add-source "<<path to directory containing the .n
 
 #### birdnames-cli default command
 ![Statistics](Screenshots/Cli-Home.png)
-
-
 
 
 ## Public site
