@@ -3,8 +3,6 @@ name: .NET Core
 on:
   push:
     branches: [ master ]
-  pull_request:
-    branches: [ master ]
 
 jobs:
   build:
@@ -60,11 +58,11 @@ jobs:
         username: ${{ secrets.DOCKER_HUB_USERNAME }}
         password: ${{ secrets.DOCKER_HUB_TOKEN }}
     
-    - name: If-develop, publish docker
+    - name: If-master, publish docker
       if: (contains(github.ref, 'master'))
       uses: docker/build-push-action@v4
       with:
         push: true
         tags: jdevil/birdnames:latest
         context: ${{env.working-directory}}         
-        file: ${{env.working-directory}}/Dockerfile
+        file: ${{env.working-directory}}/output/Dockerfile
