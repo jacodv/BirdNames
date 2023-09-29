@@ -1,0 +1,70 @@
+name: .NET Core
+
+on:
+  push:
+    branches: [ develop ]
+  pull_request:
+    branches: [ develop ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    env:
+      working-directory: ./
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 7.0.401
+    - name: List current directory
+      run: ls -R
+      working-directory: ${{env.working-directory}}
+      
+    - name: Install dependencies
+      run: dotnet restore
+      working-directory: ${{env.working-directory}}
+      
+    - name: Publish BirdNames.Blazor
+      run: dotnet publish BirdNames.Blazor/BirdNames.Blazor.csproj --configuration Release -o ./output
+      working-directory: ${{env.working-directory}}
+    
+    - name: Publish BirdNames.Core
+      run: dotnet publish BirdNames.Core/BirdNames.Core.csproj --configuration Release -o ./output
+      working-directory: ${{env.working-directory}}
+    
+    - name: Publish BirdNames.Dal
+      run: dotnet publish BirdNames.Dal/BirdNames.Dal.csproj --configuration Release -o ./output
+      working-directory: ${{env.working-directory}}
+    
+    - name: Publish BirdNames.Models
+      run: dotnet publish BirdNames.Models/BirdNames.Models.csproj --configuration Release -o ./output
+      working-directory: ${{env.working-directory}}
+    
+    - name: Publish BirdNames.Tool
+      run: dotnet publish BirdNames.Tool/BirdNames.Tool.csproj --configuration Release -o ./output
+      working-directory: ${{env.working-directory}}
+    
+    - name: Copy Dockerfile
+      run: cp ./docker/Dockerfile ./output
+      working-directory: ${{env.working-directory}}
+      
+    - name: Echo the branch
+      run: |
+        echo ${{github.ref}}
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
+    
+    - name: If-develop, publish docker
+      if: (contains(github.ref, 'develop'))
+      uses: docker/build-push-action@v4
+      with:
+        push: true
+        tags: jdevil/birdnames:latest
+        context: ${{env.working-directory}}         
+        file: ${{env.working-directory}}/Dockerfile

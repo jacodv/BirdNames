@@ -12,7 +12,7 @@ services:
       - ./mongodata:/data/db
 
   birdnames:
-    image: "birdnames"
+    image: "jdevil/birdnames:latest"
     depends_on:
       - mongo
     ports:
