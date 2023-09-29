@@ -16,7 +16,7 @@ WORKDIR /BirdNames
 
 
 
-COPY . .
+COPY ./output .
 # ENTRYPOINT ["mongod"]
 
 EXPOSE 80
