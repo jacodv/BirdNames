@@ -1,23 +1,22 @@
 version: '3.4'
 
 services:
-  mongo:
-    image: mongo:latest
-    hostname: mongodb
-    container_name: mongodb
-    restart: unless-stopped
-    ports:
-      - 27017:27017
-    volumes:
-      - ./mongodata:/data/db
+  # mongo:
+  #   image: mongo:latest
+  #   hostname: mongodb
+  #   container_name: mongodb
+  #   restart: unless-stopped
+  #   ports:
+  #     - 27017:27017
+  #   volumes:
+  #     - ./mongodata:/data/db
 
   birdnames:
     image: "jdevil/birdnames:latest"
-    depends_on:
-      - mongo
+    # depends_on:
+    #   - mongo
     ports:
-      - "5000:80"
-      - "5001:443"
+      - "80:80"
       # - "27017:27017"
     container_name: "birdnames"
     command: "dotnet BirdNames.Blazor.dll"
