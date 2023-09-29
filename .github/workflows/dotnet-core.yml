@@ -2,9 +2,9 @@ name: .NET Core
 
 on:
   push:
-    branches: [ develop ]
+    branches: [ master ]
   pull_request:
-    branches: [ develop ]
+    branches: [ master ]
 
 jobs:
   build:
@@ -32,19 +32,19 @@ jobs:
       working-directory: ${{env.working-directory}}
     
     - name: Publish BirdNames.Core
-      run: dotnet publish BirdNames.Core/BirdNames.Core.csproj --configuration Release -o ./output
+      run: dotnet publish BirdNames.Core/BirdNames.Core.csproj --configuration Release
       working-directory: ${{env.working-directory}}
     
     - name: Publish BirdNames.Dal
-      run: dotnet publish BirdNames.Dal/BirdNames.Dal.csproj --configuration Release -o ./output
+      run: dotnet publish BirdNames.Dal/BirdNames.Dal.csproj --configuration Release
       working-directory: ${{env.working-directory}}
     
     - name: Publish BirdNames.Models
-      run: dotnet publish BirdNames.Models/BirdNames.Models.csproj --configuration Release -o ./output
+      run: dotnet publish BirdNames.Models/BirdNames.Models.csproj --configuration Release
       working-directory: ${{env.working-directory}}
     
     - name: Publish BirdNames.Tool
-      run: dotnet publish BirdNames.Tool/BirdNames.Tool.csproj --configuration Release -o ./output
+      run: dotnet publish BirdNames.Tool/BirdNames.Tool.csproj --configuration Release
       working-directory: ${{env.working-directory}}
     
     - name: Copy Dockerfile
@@ -61,7 +61,7 @@ jobs:
         password: ${{ secrets.DOCKER_HUB_TOKEN }}
     
     - name: If-develop, publish docker
-      if: (contains(github.ref, 'develop'))
+      if: (contains(github.ref, 'master'))
       uses: docker/build-push-action@v4
       with:
         push: true
