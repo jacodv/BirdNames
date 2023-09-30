@@ -193,11 +193,11 @@ public class AdminPageBase : ComponentBase, IDisposable
   #region Private
   private string _getTempXmlFilePath()
   {
-    return Path.Combine(Path.Combine(Environment.ContentRootPath, XmlTempFile));
+    return System.IO.Path.Combine(System.IO.Path.Combine(Environment.ContentRootPath, XmlTempFile));
   }
   private string _getTempCsvFilePath()
   {
-    return Path.Combine(Path.Combine(Environment.ContentRootPath, CsvTempFile));
+    return System.IO.Path.Combine(System.IO.Path.Combine(Environment.ContentRootPath, CsvTempFile));
   }
   private async Task _saveUploadedFile(InputFileChangeEventArgs args, string tempFilePath, string expectedContentType)
   {

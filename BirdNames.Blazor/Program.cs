@@ -1,8 +1,12 @@
 using System.Net.Mime;
+using BirdNames.Blazor.GraphQL;
 using BirdNames.Core.Models;
 using BirdNames.Core.Settings;
 using BirdNames.Core.StartUp;
+using BirdNames.Dal.Interfaces;
 using FluentValidation;
+using Microsoft.OpenApi.Models;
+using MongoDB.Driver;
 using Radzen;
 using Serilog;
 
@@ -35,6 +39,7 @@ public class Program
 
     builder.Host.UseSerilog(Logger);
 
+
     // Add services to the container.
     builder.Services.AddRazorPages();
     builder.Services.AddServerSideBlazor();
@@ -52,8 +57,22 @@ public class Program
 
     builder.Services.AddValidatorsFromAssemblyContaining<ModelVersionBaseValidator<BirdNamesOrder>>();
 
+    builder.Services.AddTransient(ctx =>
+      ctx.GetService<IRepository<EBirdMajorRegion>>()!.GetCollection());
+    builder.Services.AddTransient(ctx =>
+      ctx.GetService<IRepository<EBirdCountry>>()!.GetCollection());
+    builder.Services.AddTransient(ctx =>
+      ctx.GetService<IRepository<EBirdSubRegion1>>()!.GetCollection());
+
     builder.Services.SetupBirdNamesCore();
     builder.Services.AddRadzenComponents();
+    builder.Services.ConfigureGraphQl();
+    builder.Services.AddControllers();
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen(c =>
+    {
+      c.SwaggerDoc("v1", new OpenApiInfo { Title = "BirdNames API", Version = "v1" });
+    });
 
     var app = builder.Build();
 
@@ -70,9 +89,21 @@ public class Program
     app.UseHttpsRedirection();
     app.UseStaticFiles();
     app.UseRouting();
-    app.MapBlazorHub();
-    app.MapFallbackToPage("/_Host");
+    
+    app.MapControllers();
+    
+    app.MapGraphQL();
+    
+    app.MapSwagger();
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+      c.SwaggerEndpoint("/swagger/v1/swagger.json", "BirdNames API V1");
+    });
 
+    app.MapBlazorHub();
+    app.MapFallbackToPage("/{param?}", "/_Host");
+    app.MapFallbackToPage("/_Host");
     app.Run();
   }
 }

@@ -20,6 +20,7 @@ services:
       # - "27017:27017"
     container_name: "birdnames"
     command: "dotnet BirdNames.Blazor.dll"
+    restart: unless-stopped
     # command: sh -c "mongod & exec dotnet BirdNames.Blazor.dll"
     # volumes:
     #   - ./mongodata:/data/db
