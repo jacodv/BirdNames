@@ -115,7 +115,7 @@
   IEnumerable<int>? _selectedSynonyms;
   IEnumerable<KeyValuePair<int, string>>? _synonymItems;
 
-  string _downloadFileName = $"BirdNamesKeywords{DateTime.Now:yyy-MM-dd}.txt";
+  string _downloadFileName = FileHelpers.GetDownloadFileName();
   bool _zip = true;
 
   bool _previewDisabled = true;
@@ -335,7 +335,7 @@
         _downloadFileName.Replace(".txt", ".zip") :
         _downloadFileName;
       var fileData = _zip ?
-        _createZip() :
+        FileHelpers.CreateZip(_keyWordFileContent!, _downloadFileName) :
         _keyWordFileContent.ToArray();
 
       _keyWordFileContent.Position = 0;
@@ -348,22 +348,6 @@
     {
       _error = e.ToString();
     }
-  }
-
-  private byte[] _createZip()
-  {
-    using var memoryStream = new MemoryStream();
-    using (var archive = ZipArchive.Create())
-    {
-      archive.AddEntry(_downloadFileName, _keyWordFileContent!, _keyWordFileContent!.Length, DateTime.Now);
-      archive.SaveTo(memoryStream, new WriterOptions(CompressionType.Deflate)
-        {
-          LeaveStreamOpen = true
-        });
-    }
-    //reset memoryStream to be usable now
-    memoryStream.Position = 0;
-    return memoryStream.ToArray();
   }
   #endregion
 }
