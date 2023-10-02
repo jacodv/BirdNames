@@ -4,9 +4,6 @@
 @using BirdNames.Core.Enums
 @using BirdNames.Core.Models
 @using BirdNames.Dal.Interfaces
-@using SharpCompress.Archives.Zip
-@using SharpCompress.Common
-@using SharpCompress.Writers
 
 @inject IRepository<EBirdMajorRegion> MajorRegionRepository;
 @inject IRepository<EBirdCountry> CountryRepository;
@@ -17,6 +14,8 @@
 <PageTitle>Download Keyword List</PageTitle>
 
 <h3>Configure Keyword List</h3>
+<p>Configure the content and select a region for the keyword list. Then click <b><i>preview</i></b> to verify the structure, then click <b><i>download</i></b></p>
+
 <div class="row">
   <hr/>
   <div class="col-md-6">
