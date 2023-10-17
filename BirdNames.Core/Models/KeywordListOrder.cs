@@ -29,6 +29,12 @@ public class KeywordListOrder : KeywordListItem<KeywordListFamily>
     logger.LogInformation($"\tFamilies:{families.Count} for Order:{this} and Species:{species.Count}");
     foreach (var family in families)
     {
+      if (family.Key?.FamilyCode == null && family.Key?.FamilyComName == null && family.Key?.FamilySciName == null)
+      {
+        logger.LogInformation($"\t\tSkipping empty object");
+        continue;
+      }
+
       var familyItem = new KeywordListFamily(family.Key.FamilyCode, family.Key.FamilyComName, family.Key.FamilySciName);
       var genus = familyItem.Latin.Split(' ')[0];
       logger.LogInformation($"\t\tGenus:{genus} - {family.Key.FamilySciName}");

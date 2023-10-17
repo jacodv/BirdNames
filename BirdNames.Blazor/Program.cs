@@ -88,7 +88,10 @@ public class Program
 
     app.UseHttpsRedirection();
     app.UseStaticFiles();
-    app.UseRouting();
+    app.UseRouting()
+      .UseWhen(
+        context=>context.Request.Path.StartsWithSegments("/Files"),
+        appBuilder=>appBuilder.UseStaticFiles());
     
     app.MapControllers();
     

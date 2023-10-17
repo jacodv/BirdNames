@@ -17,19 +17,24 @@
 <p>Configure the content and select a region for the keyword list. Then click <b><i>preview</i></b> to verify the structure, then click <b><i>download</i></b></p>
 
 <div class="row">
-  <hr/>
+  <hr />
   <div class="col-md-6">
-    <RadzenLabel Text="Download File:" Component="fileNameTextBox" Style="margin-right: 8px; vertical-align: middle;font-style: italic; font-weight:bold" />
-    <RadzenTextBox Name="fileNameTextBox" Value=@_downloadFileName
-                   Disabled="true" Style="width: 70%"></RadzenTextBox>
+    <DownloadFiles></DownloadFiles>
   </div>
   <div class="col-md-6">
-    <RadzenCheckBox Name="zipCheckBox" @bind-Value=@_zip></RadzenCheckBox>
-    <RadzenLabel Text="Download as zip file" Component="zipCheckBox" Style="margin-left: 8px; vertical-align: middle;font-style: italic; font-weight:bold" />
+    <div>
+      <RadzenLabel Text="Download File:" Component="fileNameTextBox" Style="margin-right: 8px; vertical-align: middle;font-style: italic; font-weight:bold" />
+      <RadzenTextBox Name="fileNameTextBox" Value=@_downloadFileName
+                     Disabled="true" Style="width: 70%"></RadzenTextBox>
+    </div>
+    <div>
+      <RadzenCheckBox Name="zipCheckBox" @bind-Value=@_zip></RadzenCheckBox>
+      <RadzenLabel Text="Download as zip file" Component="zipCheckBox" Style="margin-left: 8px; vertical-align: middle;font-style: italic; font-weight:bold" />
+    </div>
   </div>
 </div>
 <div class="row">
-  <hr/>
+  <hr />
   <div class="col-md-6">
     <RadzenLabel Text="Choose the depth" Component="depthCheckList" Style="margin-right: 8px; vertical-align: middle;font-style: italic; font-weight:bold" />
     <RadzenCheckBoxList Name="depthCheckList"
@@ -53,7 +58,7 @@
   </div>
 </div>
 <div class="row">
-  <hr/>
+  <hr />
   <div class="col-md-12">
     <RadzenLabel Text="Choose the Region Type" Component="regionTypeOptions" Style="margin-right: 8px; vertical-align: middle;font-style: italic; font-weight:bold" />
     <RadzenRadioButtonList id="regionTypeOptions"
@@ -96,10 +101,10 @@
   </div>
 </div>
 <div class="row">
-  <hr/>
+  <hr />
   <div class="col-md-12">
-    <RadzenLabel Text="Preview" Style="margin-right: 8px; vertical-align: middle;font-style: italic; font-weight:bold"/>
-    <hr/>
+    <RadzenLabel Text="Preview" Style="margin-right: 8px; vertical-align: middle;font-style: italic; font-weight:bold" />
+    <hr />
     <pre id="preview">@_previewText</pre>
   </div>
 </div>
