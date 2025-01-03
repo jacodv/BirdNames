@@ -1,0 +1,31 @@
+﻿@inherits LayoutComponentBase
+
+<PageTitle>Keyword Generator</PageTitle>
+
+<RadzenComponents @rendermode="InteractiveServer" />
+<RadzenDialog @rendermode="InteractiveServer" />
+<RadzenNotification @rendermode="InteractiveServer" />
+<RadzenTooltip @rendermode="InteractiveServer" />
+<RadzenContextMenu @rendermode="InteractiveServer" />
+
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <div class="top-row px-4">
+            <a href="https://github.com/jacodv/BirdNames" target="_blank">Github Project</a>
+        </div>
+
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>

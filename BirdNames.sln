@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BirdNames.Dal", "BirdNames.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BirdNames.Core", "BirdNames.Core\BirdNames.Core.csproj", "{C4DA1C4D-D231-4507-8006-8E839AAE825D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BirdNames.Blazor", "BirdNames.Blazor\BirdNames.Blazor.csproj", "{6568C0CE-209C-4933-B5CE-C1882067F4D4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BirdNames.Blazor", "BirdNames.Blazor\BirdNames.Blazor.csproj", "{D1CB7A37-EBBE-4480-AFF0-FB3E1E30DDFD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,10 +29,10 @@ Global
 		{C4DA1C4D-D231-4507-8006-8E839AAE825D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C4DA1C4D-D231-4507-8006-8E839AAE825D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C4DA1C4D-D231-4507-8006-8E839AAE825D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6568C0CE-209C-4933-B5CE-C1882067F4D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6568C0CE-209C-4933-B5CE-C1882067F4D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6568C0CE-209C-4933-B5CE-C1882067F4D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6568C0CE-209C-4933-B5CE-C1882067F4D4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D1CB7A37-EBBE-4480-AFF0-FB3E1E30DDFD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D1CB7A37-EBBE-4480-AFF0-FB3E1E30DDFD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D1CB7A37-EBBE-4480-AFF0-FB3E1E30DDFD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D1CB7A37-EBBE-4480-AFF0-FB3E1E30DDFD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
